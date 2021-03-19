@@ -231,7 +231,7 @@ def read_race_examples(input_file, input_tag_file, is_training):
         dqtag = all_dqtag_data[qas_id_to_tag_idx_map[s8]]
         doc_tokens = dqtag["token_doc"]
         assert dqtag["qas_id"] == s8
-
+        # 这一段和squad里新增的一样，处理文章
         sen_texts = simple_nlp.nlp(s1)
         sen_list = []
         for sen_ix, sent in enumerate(sen_texts.sents):
@@ -683,7 +683,7 @@ def main():
                         type=str,
                         help="The output directory where the model checkpoints will be written.")
     parser.add_argument("--train_file",
-                        default='data/race/race_sample.json',
+                        default='data/race/race_sample.json',###要改成自己的文件名
                         type=str)
     parser.add_argument("--dev_file",
                         default='dev.json',
@@ -692,7 +692,7 @@ def main():
                         default='test.json',
                         type=str)
     parser.add_argument("--train_tag_file",
-                        default='data/race/race_span_sample.json',
+                        default='data/race/race_span_sample.json',###要改成自己的文件名
                         type=str)
     parser.add_argument("--dev_tag_file",
                         default='output_race_dev.json',
@@ -707,7 +707,7 @@ def main():
                         default='output_race_testhigh.json',
                         type=str)
 
-    parser.add_argument("--sa_file",
+    parser.add_argument("--sa_file",#这是什么
                         default='sample_nsp_train_dev.json',
                         type=str)
     parser.add_argument("--test_middle",
@@ -716,7 +716,7 @@ def main():
     parser.add_argument("--test_high",
                         default='testhigh.json',
                         type=str)
-    parser.add_argument("--mid_high",
+    parser.add_argument("--mid_high",#这是什么
                         default=True,
                         help="Whether to run training.")
     parser.add_argument('--n_gpu',
@@ -760,11 +760,11 @@ def main():
                         default=False,
                         action='store_true',
                         help="Whether to run eval on the dev set.")
-    parser.add_argument("--load_ft",
+    parser.add_argument("--load_ft",#用uncased无大小写模型时要这个
                         default=False,
                         action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--do_lower_case",
+    parser.add_argument("--do_lower_case",#用uncased无大小写模型时要这个
                         default=True,
                         action='store_true',
                         help="Set this flag if you are using an uncased model.")
@@ -833,11 +833,11 @@ def main():
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)###要改这个
     model = BertForMultipleChoiceSpanMask.from_pretrained(args.bert_model,
                                                           cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
                                                               args.local_rank),
-                                                          num_choices=4)
+                                                          num_choices=4)###要改这个
 
     train_examples = None
     num_train_steps = None
@@ -907,16 +907,17 @@ def main():
     best_accuracy = 0
 
     if args.do_train:
+
         train_features = convert_examples_to_features(
             examples=train_examples,
             tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length)
+            max_seq_length=args.max_seq_length)###
 
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
-        logger.info("  Num steps = %d", num_train_steps)
-        with open(output_eval_file, "a") as writer:
+        logger.info("  Num steps = %d", num_train_steps)###
+        with open(output_eval_file, "a") as writer:###
             writer.write("***** Running training *****\t\n")
             writer.write("  Num examples = %d\t\n" % len(train_examples))
             writer.write("  Batch size = %d\t\n" % args.train_batch_size)
@@ -929,7 +930,7 @@ def main():
         all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
 
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label, all_example_index)
-        if args.local_rank == -1:
+        if args.local_rank == -1:###
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
