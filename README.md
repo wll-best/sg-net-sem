@@ -1,8 +1,6 @@
 #改写sgnet---sem
 
-
-
-论文名： SG-Net: Syntax-Guided Machine Reading Comprehension
+ SG-Net: Syntax-Guided Machine Reading Comprehension
 
 ![model](model.png)
 
