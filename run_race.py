@@ -683,22 +683,22 @@ def main():
                         type=str,
                         help="The output directory where the model checkpoints will be written.")
     parser.add_argument("--train_file",
-                        default='data/race/race_sample.json',###要改成自己的文件名
+                        default='data/race/race_train.json',###要改成自己的文件名
                         type=str)
     parser.add_argument("--dev_file",
                         default='dev.json',
                         type=str)
     parser.add_argument("--test_file",
-                        default='test.json',
+                        default='data/race/race_test.json',###要改成自己的文件名
                         type=str)
     parser.add_argument("--train_tag_file",
-                        default='data/race/race_span_sample.json',###要改成自己的文件名
+                        default='data/race/race_span_train.json',###要改成自己的文件名
                         type=str)
     parser.add_argument("--dev_tag_file",
                         default='output_race_dev.json',
                         type=str)
     parser.add_argument("--test_tag_file",
-                        default='output_race_test.json',
+                        default='data/race/race_test.json',###要改成自己的文件名
                         type=str)
     parser.add_argument("--test_middle_tag_file",
                         default='output_race_testmiddle.json',
