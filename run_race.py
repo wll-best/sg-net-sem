@@ -698,7 +698,7 @@ def main():
                         default='output_race_dev.json',
                         type=str)
     parser.add_argument("--test_tag_file",
-                        default='data/race/race_test.json',###要改成自己的文件名
+                        default='data/race/race_span_test.json',###要改成自己的文件名
                         type=str)
     parser.add_argument("--test_middle_tag_file",
                         default='output_race_testmiddle.json',
