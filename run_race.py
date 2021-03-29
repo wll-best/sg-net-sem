@@ -334,7 +334,7 @@ def get_sub_spans(que_tokens, que_types, tokenizer, que_span):
     assert len(que_tokens) == len(que_span)
     for idx, que_token in enumerate(que_tokens):
         sub_que_type_list = [que_types[idx]]
-        sub_que_tok = tokenizer.tokenize(que_token)
+        sub_que_tok = tokenizer.tokenize(que_token)#切分词。大写变小写，分隔开单词和标点。
         query_tokens.extend(sub_que_tok)
         while len(sub_que_type_list) != len(sub_que_tok):
             sub_que_type_list.append("subword")
@@ -454,7 +454,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):
 
         assert len(sub_doc_span) == len(all_doc_tokens)
 
-        # making masks
+        # making masks。span_mask的0/1矩阵
         que_span_mask = np.zeros((len(sub_que_spans), len(sub_que_spans)))
         for idx, span_list in enumerate(sub_que_spans):
             for (start_ix, end_ix) in span_list:
@@ -539,7 +539,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):
             len(context_tokens_choice) + 2:len(context_tokens_choice) + 2 + len(ending_tokens)] = opt_span_mask[
                                                                                                       ending_index][
                                                                                                   idxb:, idxb:]
-
+            #record_mask records ancestor nodes for each wd。span_mask中的1所在索引位置记录
             record_mask = []
             for i in range(max_seq_length):
                 i_mask = []
@@ -598,7 +598,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
         if total_length <= max_length:
             break
         if len(tokens_a) > len(tokens_b):
-            tokens_a.pop(0)
+            tokens_a.pop(0)#pop()即每次弹出列表最后一个元素。pop(0)每次弹出列表第一个元素
             idx_a.pop(0)
         else:
             tokens_b.pop(0)

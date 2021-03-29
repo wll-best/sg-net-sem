@@ -277,7 +277,8 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
         #         #     tokens_b = tokenizer.tokenize(example.text_b)
         if len(tokens_a) > max_seq_length - 2:
             tokens_a = tokens_a[:(max_seq_length - 2)]
-        idxa2 = list(range(len(tokens_a)))
+        idxa = list(range(len(tokens_a)))
+        idxa2=idxa[0]
 
         input_span_mask = np.zeros((max_seq_length, max_seq_length))
         # 0 count for [CLS] and select_doc_len+1 count for [SEP]
