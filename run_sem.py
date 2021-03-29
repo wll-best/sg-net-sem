@@ -295,7 +295,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
         text_len=len(tokens_a)#删掉
 
         tokens = ["[CLS]"] + tokens_a + ["[SEP]"]
-        segment_ids = [0] * (len(tokens)+2)#我把[]也算上了所以加了2
+        segment_ids = [0] * (len(tokens))
 
         input_ids = tokenizer.convert_tokens_to_ids(tokens)
         # # The mask has 1 for real tokens and 0 for padding tokens. Only real
