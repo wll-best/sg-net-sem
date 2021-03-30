@@ -165,7 +165,7 @@ def read_sem_examples(input_file, input_tag_file, is_training):
             "head_text": [int(i) for i in tag_rep["pred_head_text"]],
             "span_text": [eval(i) for i in tag_rep["hpsg_list_text"]],
             "type_text": tag_rep["pred_type_text"],
-            "token_text": tag_rep['text_tokens'],
+            "token_text": tag_rep["text_tokens"],
         }
         all_dqtag_data.append(dqtag_data)
 
@@ -270,7 +270,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
 
         choices_features = []
         context_text_span_mask = np.zeros((len(tokens_a), len(tokens_a)))
-        context_text_span_mask[0:len(tokens_a), 0:len(tokens_a)] = text_span_mask
+        context_text_span_mask[0:len(tokens_a), 0:len(tokens_a)] = text_span_mask#暂时改成context_text_span_mask = np.zeros((len(tokens_a), len(tokens_a)))
 
         # tokens_b = None
         #         # if example.text_b:
@@ -278,11 +278,11 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
         if len(tokens_a) > max_seq_length - 2:
             tokens_a = tokens_a[:(max_seq_length - 2)]
         idxa = list(range(len(tokens_a)))
-        idxa2=idxa[0]
+        idxa2=idxa[0]#0
 
         input_span_mask = np.zeros((max_seq_length, max_seq_length))
         # 0 count for [CLS] and select_doc_len+1 count for [SEP]
-        input_span_mask[1:len(tokens_a) + 1, 1:len(tokens_a) + 1] = context_text_span_mask[idxa2:, idxa2:]
+        input_span_mask[1:len(tokens_a) + 1, 1:len(tokens_a) + 1] = context_text_span_mask[idxa2:, idxa2:]###
 
         record_mask = []
         for i in range(max_seq_length):
