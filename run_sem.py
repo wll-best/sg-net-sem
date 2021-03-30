@@ -165,7 +165,7 @@ def read_sem_examples(input_file, input_tag_file, is_training):
             "head_text": [int(i) for i in tag_rep["pred_head_text"]],
             "span_text": [eval(i) for i in tag_rep["hpsg_list_text"]],
             "type_text": tag_rep["pred_type_text"],
-            "token_text": tag_rep["text_tokens"],
+            "token_text": tag_rep['text_tokens'],
         }
         all_dqtag_data.append(dqtag_data)
 
