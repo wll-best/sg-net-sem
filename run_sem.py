@@ -149,8 +149,8 @@ def read_sem_examples(input_file, input_tag_file, is_training):
     text, y, gid = rea_sem(input_file)
 
     input_tag_data = []
-    simple_nlp = SimpleNlp()
 
+    simple_nlp = SimpleNlp()
     with open(input_tag_file, "r", encoding='utf-8') as reader:
         for line in reader:
             input_tag_data.append(json.loads(line))
@@ -266,7 +266,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
                     text_span_mask[start_ix:end_ix + 1, idx] = 1
 
         tokens_a = tokenizer.tokenize(example.text_a)
-        assert len(sub_text_spans) == len(tokens_a)
+        #assert len(sub_text_spans) == len(tokens_a)
 
         choices_features = []
         context_text_span_mask = np.zeros((len(tokens_a), len(tokens_a)))
