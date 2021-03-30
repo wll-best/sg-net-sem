@@ -709,7 +709,7 @@ def run_parse(args):
     def save_data(syntree_pred, cun):
         pred_head = [[leaf.father for leaf in tree.leaves()] for tree in syntree_pred]
         pred_type = [[leaf.type for leaf in tree.leaves()] for tree in syntree_pred]
-        appent_string = "_" + str(cun) + ".txt"
+        appent_string = "_" + str(cun) + ".json"
         '''
         if args.output_path_synconst != '-':
             with open(args.output_path_synconst + appent_string, 'w') as output_file:

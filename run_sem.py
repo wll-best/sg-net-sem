@@ -165,7 +165,7 @@ def read_sem_examples(input_file, input_tag_file, is_training):
             "head_text": [int(i) for i in tag_rep["pred_head_text"]],
             "span_text": [eval(i) for i in tag_rep["hpsg_list_text"]],
             "type_text": tag_rep["pred_type_text"],
-            "token_text": tag_rep['text_tokens'],
+            "token_text": tag_rep['text_tokens'],###改成双引号
         }
         all_dqtag_data.append(dqtag_data)
 
@@ -270,7 +270,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
 
         choices_features = []
         context_text_span_mask = np.zeros((len(tokens_a), len(tokens_a)))
-        context_text_span_mask[0:len(tokens_a), 0:len(tokens_a)] = text_span_mask#暂时改成context_text_span_mask = np.zeros((len(tokens_a), len(tokens_a)))
+        context_text_span_mask[0:len(tokens_a), 0:len(tokens_a)] = text_span_mask#暂时改成context_text_span_mask = text_span_mask
 
         # tokens_b = None
         #         # if example.text_b:
