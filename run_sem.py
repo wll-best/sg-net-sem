@@ -125,7 +125,7 @@ def rea_sem(path):
                 continue
             gid.append(i)#这里我把编号从1开始排序
             text.append(line[0])
-            y.append(line[1])
+            y.append(int(line[1]))####改成int型
         return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
 
 ###新增
@@ -257,6 +257,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
         text_span=example.text_span
         org_text_token = example.token_text
         sub_text_spans,tokens_a = get_sub_spans(org_text_token, text_types, tokenizer, text_span)
+        #这里tokens_a的切分做更改了
 
         # making masks
         text_span_mask = np.zeros((len(sub_text_spans), len(sub_text_spans)))
@@ -270,7 +271,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
 
         choices_features = []
         context_text_span_mask = np.zeros((len(tokens_a), len(tokens_a)))
-        context_text_span_mask[0:len(tokens_a), 0:len(tokens_a)] = text_span_mask#暂时改成context_text_span_mask = text_span_mask
+        context_text_span_mask[0:len(tokens_a), 0:len(tokens_a)] = text_span_mask
 
         # tokens_b = None
         #         # if example.text_b:
@@ -292,7 +293,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
                     i_mask.append(j)
             record_mask.append(i_mask)
 
-        text_len=len(tokens_a)#删掉
+        text_len=len(tokens_a)
 
         tokens = ["[CLS]"] + tokens_a + ["[SEP]"]
         segment_ids = [0] * (len(tokens))
@@ -512,7 +513,7 @@ def main():
                         action='store_true',
                         help="Whether to use 16-bit float precision instead of 32-bit")
     parser.add_argument('--loss_scale',
-                        type=float, default=4,
+                        type=float, default=5,#原来是4
                         help='Loss scaling, positive power of 2 values can improve fp16 convergence.')
 
     # parser.add_argument("--label_list",
@@ -594,11 +595,14 @@ def main():
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
-    model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model,
+    # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model,
+    #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
+    #                                                           args.local_rank),
+    #                                                       num_labels=5)###要改这个
+    model = BertForMultipleChoiceSpanMask.from_pretrained(args.bert_model,
                                                           cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
                                                               args.local_rank),
-                                                          num_labels=5)###要改这个
-
+                                                          num_choices=5)###要改这个
     train_examples = None
     num_train_steps = None
 
@@ -790,8 +794,10 @@ def main():
             train_loss = TrainLoss[epoch]
             output_model_file = os.path.join(args.output_dir, "epoch_" + str(epoch) + "_pytorch_model.bin")
             model_state_dict = torch.load(output_model_file)
-            model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
-                                                                  num_labels=5)###改
+            # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
+            #                                                       num_labels=5)###改
+            model = BertForMultipleChoiceSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
+                                                                  num_choices=5)
             model.to(device)
             logger.info("Start evaluating")
 

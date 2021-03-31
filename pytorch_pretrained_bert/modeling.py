@@ -1563,7 +1563,7 @@ class BertForSequenceClassificationSpanMask(BertPreTrainedModel):
         self.w = nn.Parameter(torch.Tensor([0.5, 0.5]))###
         self.gamma = nn.Parameter(torch.ones(1))###
 
-        self.classifier = nn.Linear(config.hidden_size, num_labels)##
+        self.classifier = nn.Linear(config.hidden_size, num_labels)###这个race里是1，需要改成num_labels吗？
         self.apply(self.init_bert_weights)
 
     # 新增input_span_mask
