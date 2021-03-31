@@ -109,6 +109,7 @@ class InputFeatures(object):
             choices_features
         ]
         self.label = label-1
+
         assert self.label>=1
         assert self.label<=5
 
