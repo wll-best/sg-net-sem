@@ -108,7 +108,9 @@ class InputFeatures(object):
             for _, input_ids, input_mask, segment_ids, text_len, input_span_mask in
             choices_features
         ]
-        self.label = label
+        self.label = label-1
+        assert self.label>=1
+        assert self.label<=5
 
 
 def rea_sem(path):
