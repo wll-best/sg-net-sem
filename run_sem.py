@@ -225,7 +225,7 @@ def get_sub_spans(que_tokens, que_types, tokenizer, que_span):
 
     assert len(sub_que_span) == len(query_tokens)
 
-    return sub_que_span
+    return sub_que_span,query_tokens
 
 
 def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_list
@@ -256,7 +256,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
         text_types=example.text_types
         text_span=example.text_span
         org_text_token = example.token_text
-        sub_text_spans = get_sub_spans(org_text_token, text_types, tokenizer, text_span)
+        sub_text_spans,tokens_a = get_sub_spans(org_text_token, text_types, tokenizer, text_span)
 
         # making masks
         text_span_mask = np.zeros((len(sub_text_spans), len(sub_text_spans)))
@@ -265,7 +265,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
                 if start_ix != end_ix:
                     text_span_mask[start_ix:end_ix + 1, idx] = 1
 
-        tokens_a = tokenizer.tokenize(example.text_a)
+        #tokens_a = tokenizer.tokenize(example.text_a)
         #assert len(sub_text_spans) == len(tokens_a)
 
         choices_features = []
