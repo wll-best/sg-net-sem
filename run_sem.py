@@ -110,8 +110,8 @@ class InputFeatures(object):
         ]
         self.label = label-1
 
-        assert self.label>=1
-        assert self.label<=5
+        assert self.label>=0
+        assert self.label<=4
 
 
 def rea_sem(path):
