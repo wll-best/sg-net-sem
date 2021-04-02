@@ -1679,11 +1679,7 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         #注意！！！！！！如果删掉上面的flat的话，input_ids, token_type_ids维度不对
         all_encoder_layers, _ = self.bert(flat_input_ids, flat_token_type_ids, flat_attention_mask,
                                           output_all_encoded_layers=True)
-        ###开始变化
-        input_span_mask = input_span_mask.view(-1, input_ids.size(-1), input_ids.size(-1))###
-        ###下面这句话有维度问题
-        all_encoder_layers, _ = self.bert(input_ids, token_type_ids, attention_mask,
-                                          output_all_encoded_layers=True)
+
         sequence_output = all_encoder_layers[-1]
         sequence_output = self.dropout(sequence_output)
 
