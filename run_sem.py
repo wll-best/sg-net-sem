@@ -370,7 +370,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
 
 #一样
 def accuracy(out, labels):
-    outputs = np.argmax(out, axis=1)
+    outputs = np.argmax(out, axis=1)#当axis=1，是在行中比较，选出最大的 列 索引
     return np.sum(outputs == labels)
 
 #新增
