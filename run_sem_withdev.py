@@ -675,7 +675,7 @@ def main():
         num_train_steps = int(
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
         num_dev_steps = int(
-            len(dev_examples) / args.dev_batch_size / args.gradient_accumulation_steps * args.num_dev_epochs)
+            len(dev_examples) / args.dev_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
 
     if args.fp16:
