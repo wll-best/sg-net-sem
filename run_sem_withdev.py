@@ -473,7 +473,7 @@ def main():
                         help="The output directory where the model checkpoints will be written.")
     parser.add_argument("--output_file",
                         # default='output_batch4_gpu4_large_qo_lamda10_fp16.txt',
-                        default='output_batch4_fp16.txt',
+                        default='output_file.txt',
                         type=str,
                         help="The output directory where the model checkpoints will be written.")
     parser.add_argument("--train_file",
