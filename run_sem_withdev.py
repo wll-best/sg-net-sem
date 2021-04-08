@@ -663,9 +663,6 @@ def main():
                                                           num_choices=5)###要改这个
     train_examples = None
     num_train_steps = None
-    dev_examples = None
-    num_dev_steps = None
-
 
     if args.do_train:
         train_examples = read_sem_examples(args.train_file, args.train_tag_file,
@@ -674,9 +671,6 @@ def main():
                                             is_training=True)###要改这个
         num_train_steps = int(
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
-        num_dev_steps = int(
-            len(dev_examples) / args.dev_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
-
 
     if args.fp16:
         model.half()
@@ -753,7 +747,7 @@ def main():
         logger.info("***** Running dev *****")
         logger.info("  Num examples = %d", len(dev_examples))
         logger.info("  Batch size = %d", args.dev_batch_size)
-        logger.info("  Num steps = %d", num_dev_steps)
+
 
         with open(output_eval_file, "a") as writer:###
             writer.write("***** Running training *****\t\n")
@@ -763,7 +757,6 @@ def main():
             writer.write("***** Running dev *****\t\n")
             writer.write("  Num examples = %d\t\n" % len(dev_examples))
             writer.write("  Batch size = %d\t\n" % args.dev_batch_size)
-            writer.write("  Num steps = %d\t\n" % num_dev_steps)
 
         all_input_ids = torch.tensor(select_field(train_features, 'input_ids'), dtype=torch.long)
         all_input_mask = torch.tensor(select_field(train_features, 'input_mask'), dtype=torch.long)
