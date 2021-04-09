@@ -477,16 +477,22 @@ def main():
                         type=str,
                         help="The output directory where the model checkpoints will be written.")
     parser.add_argument("--train_file",
-                        default='data/sem/train.tsv',
+                        default='data/sem/ntrain.tsv',
                         type=str)
     parser.add_argument("--test_file",
-                        default='data/sem/test.tsv',
+                        default='data/sem/ntest.tsv',
                         type=str)
     parser.add_argument("--train_tag_file",
-                        default='data/sem/sem_span_train.json',
+                        default='data/sem/output_sgnet_ntrain.json',
                         type=str)
     parser.add_argument("--test_tag_file",
-                        default='data/sem/sem_span_test.json',
+                        default='data/sem/output_sgnet_ntest.json',
+                        type=str)
+    parser.add_argument("--dev_file",
+                        default='data/sem/ndev.tsv',
+                        type=str)
+    parser.add_argument("--dev_tag_file",
+                        default='data/sem/output_sgnet_ndev.json',
                         type=str)
     parser.add_argument('--n_gpu',
                         type=int, default=2,
@@ -558,12 +564,7 @@ def main():
                         type=float, default=5,#原来是4
                         help='Loss scaling, positive power of 2 values can improve fp16 convergence.')
     #增加dev集
-    parser.add_argument("--dev_file",
-                        default='data/sem/dev.tsv',
-                        type=str)
-    parser.add_argument("--dev_tag_file",
-                        default='data/sem/sem_span_dev.json',
-                        type=str)
+
     parser.add_argument("--dev_batch_size",
                         default=8,
                         type=int,
