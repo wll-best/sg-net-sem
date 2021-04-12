@@ -594,8 +594,7 @@ def main():
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
         #     TrainLoss = pickle.load(f)
 
-        eval_examples = read_sem_examples(args.test_file, args.test_tag_file,
-                                           is_training=True)###要改！！
+        eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
             tokenizer=tokenizer,
