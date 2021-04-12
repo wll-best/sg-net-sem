@@ -1504,7 +1504,7 @@ class BertForMultipleChoiceSpanMask(BertPreTrainedModel):
             return loss
         else:
             return reshaped_logits
-#自己增加。
+#自己增加。没用
 class BertForSequenceClassificationSpanMask(BertPreTrainedModel):
     """BERT model for classification.
     This module is composed of the BERT model with a linear layer on top of
