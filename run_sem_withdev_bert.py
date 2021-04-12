@@ -107,14 +107,14 @@ def read_sem_examples(input_file, is_training):
         if i == 0:
             continue
         text_a = line[0]
-        label = int(line[1])
+        label = line[1]
         examples.append(
             InputExample(guid=i, text_a=text_a, text_b=None, label=label))
 
     return examples
 
 
-def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_list
+def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):#
     """Loads a data file into a list of `InputBatch`s."""
     # The convention in BERT is:
     # (a) For sequence pairs:
@@ -136,7 +136,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
     # the entire model is fine-tuned.
 
     #label_map = {label : i for i, label in enumerate(label_list)}#要不要？
-    #label_map = {label : i for i, label in enumerate(label_list)}
+    label_map = {label : i for i, label in enumerate(label_list)}
 
     features = []
     for (ex_index, example) in enumerate(tqdm(examples, ncols=50, desc="converting...")):
@@ -175,7 +175,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
         assert len(input_ids) == max_seq_length
         assert len(input_mask) == max_seq_length
         assert len(segment_ids) == max_seq_length
-        label_id=example.label
+        label_id=label_map[example.label]
         features.append(
             InputFeatures(input_ids=input_ids,
                           input_mask=input_mask,
@@ -204,16 +204,6 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
 def accuracy(out, labels):
     outputs = np.argmax(out, axis=1)#当axis=1，是在行中比较，选出最大的 列 索引
     return np.sum(outputs == labels)
-
-#新增
-def select_field(features, field):
-    return [
-        [
-            choice[field]
-            for choice in feature.choices_features
-        ]
-        for feature in features
-    ]
 
 #一样
 def warmup_linear(x, warmup=0.002):
@@ -397,6 +387,7 @@ def main():
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
+    label_list=["1", "2", "3", "4", "5"]
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
     # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model,
     #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
@@ -474,13 +465,15 @@ def main():
         train_features = convert_examples_to_features(
             examples=train_examples,
             tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length
+            max_seq_length=args.max_seq_length,
+            label_list=label_list
         )
         #增加dev_dataloader
         dev_features = convert_examples_to_features(
             examples=dev_examples,
             tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length
+            max_seq_length=args.max_seq_length,
+            label_list = label_list
         )
 
         logger.info("***** Running training *****")
@@ -541,7 +534,7 @@ def main():
                 model.train()  # 这个位置到底在哪
 
                 batch = tuple(t.to(device) for t in batch)
-                input_ids, input_mask, segment_ids, label_ids = batch#新增example_index
+                input_ids, input_mask, segment_ids, label_ids = batch
                 #新增结束---
                 loss = model(input_ids, segment_ids, input_mask, label_ids)
                 if n_gpu > 1:
@@ -606,7 +599,8 @@ def main():
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
             tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length
+            max_seq_length=args.max_seq_length,
+            label_list=label_list
         )
             ##label_list=args.label_list)  # label_list要不要呢？先加上吧
 
@@ -614,9 +608,10 @@ def main():
         logger.info("***** Running evaluation *****")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
-        all_input_ids = torch.tensor(select_field(eval_features, 'input_ids'), dtype=torch.long)
-        all_input_mask = torch.tensor(select_field(eval_features, 'input_mask'), dtype=torch.long)
-        all_segment_ids = torch.tensor(select_field(eval_features, 'segment_ids'), dtype=torch.long)
+
+        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
         all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
 
@@ -642,7 +637,7 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
-        for input_ids, input_mask, segment_ids, label_ids, example_index in eval_dataloader:
+        for input_ids, input_mask, segment_ids, label_ids in eval_dataloader:
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
