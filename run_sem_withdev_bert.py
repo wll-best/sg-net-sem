@@ -54,20 +54,12 @@ class SemExample(object):
     def __init__(self,
                  seid,
                  text_a,  #这个删吗？
-                 text_heads,#新增3个
-                 text_types,
-                 text_span,
-                 token_text,
                  text_b=None,  # 这个删吗？
                  label=None):
         self.seid = seid
         self.text_a = text_a
         self.text_b = text_b
         self.label = label
-        self.text_heads = text_heads
-        self.text_types = text_types
-        self.text_span = text_span
-        self.token_text = token_text
 
     ###新增2个函数
     def __str__(self):
@@ -102,10 +94,8 @@ class InputFeatures(object):
                 'input_ids': input_ids,
                 'input_mask': input_mask,
                 'segment_ids': segment_ids,
-                'text_len': text_len,###将ques改成text
-                'input_span_mask': input_span_mask###
             }
-            for _, input_ids, input_mask, segment_ids, text_len, input_span_mask in
+            for _, input_ids, input_mask, segment_ids in
             choices_features
         ]
         self.label = label-1
@@ -132,31 +122,35 @@ def rea_sem(path):
         return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
 
 ###新增
-class SimpleNlp(object):
-    def __init__(self):#这得改，要用spacy打标签----------
-        self.nlp = spacy.load('en', disable=['parser', 'tagger', 'ner', 'textcat'])
-        self.nlp.add_pipe(self.nlp.create_pipe('sentencizer'))
-        # self.nlp = nltk.data.load('tokenizers/punkt/english.pickle').tokenize
-
-    def nlp(self, text):
-        return self.nlp(text)
-
-###新增
 def is_whitespace(c):
     if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
         return True
     return False
 
 
-def read_sem_examples(input_file, input_tag_file, is_training):
+def read_sem_examples(input_file, is_training):
+    with open(input_file, 'r', encoding='utf_8') as f:
+        reader = csv.reader(f, delimiter="\t")
+        lines = []
+        text = []
+        y = []
+        gid = []
+        for line in reader:
+            lines.append(line)
+        for (i, line) in enumerate(lines):
+            if i == 0:
+                continue
+            gid.append(i)#这里我把编号从1开始排序
+            text.append(line[0])
+            y.append(int(line[1]))####改成int型
+        return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
+
+
+
+
     text, y, gid = rea_sem(input_file)
 
-    input_tag_data = []
 
-    simple_nlp = SimpleNlp()
-    with open(input_tag_file, "r", encoding='utf-8') as reader:
-        for line in reader:
-            input_tag_data.append(json.loads(line))
     guid_to_tag_idx_map = {}
     all_dqtag_data = []
     for idx, tag_data in enumerate(tqdm(input_tag_data, ncols=50, desc="tagging...")):
@@ -184,10 +178,7 @@ def read_sem_examples(input_file, input_tag_file, is_training):
                 seid=s3,
                 text_a=s1,
                 label=s2 if is_training else None,
-                text_heads=dqtag["head_text"],
-                text_types=dqtag["type_text"],
-                text_span=dqtag["span_text"],
-                token_text=dqtag["token_text"]
+
             )
         )
 
@@ -658,10 +649,10 @@ def main():
     #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
     #                                                           args.local_rank),
     #                                                       num_labels=5)###要改这个
-    model = BertForSequenceClassification.from_pretrained(args.bert_model,
+    model = BertForMultipleChoiceSpanMask2.from_pretrained(args.bert_model,
                                                           cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
                                                               args.local_rank),
-                                                          num_labels=5)###要改这个
+                                                          num_choices=5)###要改这个
     train_examples = None
     num_train_steps = None
 
@@ -908,8 +899,8 @@ def main():
         model_state_dict = torch.load(output_model_file)
         # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
         #                                                       num_labels=5)###改
-        model = BertForSequenceClassification.from_pretrained(args.bert_model, state_dict=model_state_dict,
-                                                              num_labels=5)
+        model = BertForMultipleChoiceSpanMask2.from_pretrained(args.bert_model, state_dict=model_state_dict,
+                                                              num_choices=5)
         model.to(device)
         logger.info("Start evaluating")
 
