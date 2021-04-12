@@ -107,7 +107,7 @@ def read_sem_examples(input_file, is_training):
         if i == 0:
             continue
         text_a = line[0]
-        label = line[-1]
+        label = int(line[1])
         examples.append(
             InputExample(guid=i, text_a=text_a, text_b=None, label=label))
 
