@@ -1667,7 +1667,7 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         self.gamma = nn.Parameter(torch.ones(1))###
         self.classifier = nn.Linear(config.hidden_size, num_choices)##
         self.apply(self.init_bert_weights)
-        self.ddd=nn.Linear(config.hidden_size*2,config.hidden_size)###
+        self.ddd=nn.Linear(config.hidden_size*2,config.hidden_size)###改成拼接
     #新增input_span_mask
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, input_span_mask=None):
         input_span_mask = input_span_mask.cuda()###
@@ -1698,9 +1698,9 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
 
         span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
         w = F.softmax(self.w)
-        #sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)
-        sequence_output=torch.cat([sequence_output,span_sequence_output],2)#改！！！！！
-        sequence_output=self.ddd(sequence_output)###
+        #sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)#原来的做加法
+        sequence_output=torch.cat([sequence_output,span_sequence_output],2)###改成拼接
+        sequence_output=self.ddd(sequence_output)###改成拼接
 
         pooled_output = self.pooler(sequence_output)
         ###结束变化
