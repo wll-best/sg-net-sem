@@ -48,60 +48,28 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
 logger = logging.getLogger(__name__)
 
 
-class SemExample(object):
+class InputExample(object):
     """A single training/test example for simple sequence classification."""
-    #由race里的que对应sem里的text，增加text_heads,text_types,text_span,
+
     def __init__(self,
-                 seid,
-                 text_a,  #这个删吗？
-                 text_b=None,  # 这个删吗？
+                 guid,
+                 text_a,
+                 text_b=None,
                  label=None):
-        self.seid = seid
+        self.guid = guid
         self.text_a = text_a
         self.text_b = text_b
         self.label = label
 
-    ###新增2个函数
-    def __str__(self):
-        """__str__使用：被打印的时候需要以字符串的形式输出的时候，
-        就会找到这个方法，并将返回值打印出来"""
-        return self.__repr__()
-    def __repr__(self):
-        """返回一个可以用来表示对象的可打印字符串,
-         同时定义 __repr__ 方法和 __str__ 方法时，print() 方法会调用 __str__ 方法."""
-        l = [
-            f"seid: {self.seid}",
-            f"text_a: {self.text_a}",
-        ]
-
-        if self.label is not None:
-            l.append(f"label: {self.label}")
-
-        return ", ".join(l)
-
 
 class InputFeatures(object):
-    """A single set of features of data.##新增example_id,choices_features。改函数结构。"""
-    def __init__(self,
-                 example_id,
-                 choices_features,
-                 label
+    """A single set of features of data."""
 
-                 ):
-        self.example_id = example_id
-        self.choices_features = [
-            {
-                'input_ids': input_ids,
-                'input_mask': input_mask,
-                'segment_ids': segment_ids,
-            }
-            for _, input_ids, input_mask, segment_ids in
-            choices_features
-        ]
-        self.label = label-1
-
-        assert self.label>=0
-        assert self.label<=4
+    def __init__(self, input_ids, input_mask, segment_ids, label_id):
+        self.input_ids = input_ids
+        self.input_mask = input_mask
+        self.segment_ids = segment_ids
+        self.label_id = label_id#这里不用减一？？
 
 
 def rea_sem(path):
@@ -121,105 +89,29 @@ def rea_sem(path):
             y.append(int(line[1]))####改成int型
         return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
 
-###新增
-def is_whitespace(c):
-    if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
-        return True
-    return False
-
 
 def read_sem_examples(input_file, is_training):
     with open(input_file, 'r', encoding='utf_8') as f:
         reader = csv.reader(f, delimiter="\t")
         lines = []
-        text = []
-        y = []
-        gid = []
-        for line in reader:
-            lines.append(line)
-        for (i, line) in enumerate(lines):
-            if i == 0:
-                continue
-            gid.append(i)#这里我把编号从1开始排序
-            text.append(line[0])
-            y.append(int(line[1]))####改成int型
-        return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
+        for line1 in reader:
+            lines.append(line1)
 
-
-
-
-    text, y, gid = rea_sem(input_file)
-
-
-    guid_to_tag_idx_map = {}
-    all_dqtag_data = []
-    for idx, tag_data in enumerate(tqdm(input_tag_data, ncols=50, desc="tagging...")):
-        guid = tag_data["guid"]
-        guid_to_tag_idx_map[guid] = idx
-        tag_rep = tag_data["tag_rep"]
-        dqtag_data = {
-            "guid": guid,
-            "head_text": [int(i) for i in tag_rep["pred_head_text"]],
-            "span_text": [eval(i) for i in tag_rep["hpsg_list_text"]],
-            "type_text": tag_rep["pred_type_text"],
-            "token_text": tag_rep['text_tokens'],###改成双引号
-        }
-        all_dqtag_data.append(dqtag_data)
-
-    examples = []
-    for i, (s1, s2, s3), in enumerate(
-            tqdm(zip(text, y, gid), total=len(gid), ncols=50, desc="reading...")):
-        dqtag = all_dqtag_data[guid_to_tag_idx_map[s3]]
-
-        assert dqtag["guid"] == s3
-
-        examples.append(
-            SemExample(
-                seid=s3,
-                text_a=s1,
-                label=s2 if is_training else None,
-
-            )
+    if is_training and lines[0][-1] != 'label':
+        raise ValueError(
+            "For training, the input file must contain a label column."
         )
 
+    examples = []
+    for (i, line) in enumerate(lines):
+        if i == 0:
+            continue
+        text_a = line[0]
+        label = line[-1]
+        examples.append(
+            InputExample(guid=i, text_a=text_a, text_b=None, label=label))
+
     return examples
-
-###
-def get_sub_spans(que_tokens, que_types, tokenizer, que_span):
-    que_org_to_split_map = {}
-    pre_tok_len = 0
-    sub_que_types = []
-    sub_que_span = []
-    query_tokens = []
-
-    assert len(que_tokens) == len(que_span)
-    for idx, que_token in enumerate(que_tokens):
-        sub_que_type_list = [que_types[idx]]
-        sub_que_tok = tokenizer.tokenize(que_token)
-        query_tokens.extend(sub_que_tok)
-        while len(sub_que_type_list) != len(sub_que_tok):
-            sub_que_type_list.append("subword")
-        sub_que_types.extend(sub_que_type_list)
-        que_org_to_split_map[idx] = (pre_tok_len, len(sub_que_tok) + pre_tok_len - 1)
-        pre_tok_len += len(sub_que_tok)
-
-    for idx, (start_ix, end_ix) in enumerate(que_span):
-        head_start, head_end = que_org_to_split_map[idx]##不对劲
-        # sub_start_idx and sub_end_idx of children of head node
-        head_spans = [(que_org_to_split_map[start_ix - 1][0], que_org_to_split_map[end_ix - 1][1])]
-        # all other head sub_tok point to first head sub_tok
-        if head_start != head_end:
-            head_spans.append((head_start + 1, head_end))
-            sub_que_span.append(head_spans)
-
-            for i in range(head_start + 1, head_end + 1):
-                sub_que_span.append([(i, i)])
-        else:
-            sub_que_span.append(head_spans)
-
-    assert len(sub_que_span) == len(query_tokens)
-
-    return sub_que_span,query_tokens
 
 
 def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_list
@@ -244,58 +136,36 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
     # the entire model is fine-tuned.
 
     #label_map = {label : i for i, label in enumerate(label_list)}#要不要？
+    #label_map = {label : i for i, label in enumerate(label_list)}
 
     features = []
-    for example_index, example in enumerate(tqdm(examples, ncols=50, desc="converting...")):
-        text_types=example.text_types
-        text_span=example.text_span
-        org_text_token = example.token_text
-        sub_text_spans,tokens_a = get_sub_spans(org_text_token, text_types, tokenizer, text_span)
-        #这里tokens_a的切分做更改了
+    for (ex_index, example) in enumerate(tqdm(examples, ncols=50, desc="converting...")):
+        tokens_a = tokenizer.tokenize(example.text_a)
 
-        # making masks
-        text_span_mask = np.zeros((len(sub_text_spans), len(sub_text_spans)))
-        for idx, span_list in enumerate(sub_text_spans):
-            for (start_ix, end_ix) in span_list:
-                if start_ix != end_ix:
-                    text_span_mask[start_ix:end_ix + 1, idx] = 1
-
-        #tokens_a = tokenizer.tokenize(example.text_a)
-        #assert len(sub_text_spans) == len(tokens_a)
-
-        choices_features = []
-        context_text_span_mask = np.zeros((len(tokens_a), len(tokens_a)))
-        context_text_span_mask[0:len(tokens_a), 0:len(tokens_a)] = text_span_mask
-
-        # tokens_b = None
-        #         # if example.text_b:
-        #         #     tokens_b = tokenizer.tokenize(example.text_b)
-        if len(tokens_a) > max_seq_length - 2:
-            tokens_a = tokens_a[:(max_seq_length - 2)]
-        idxa = list(range(len(tokens_a)))
-        idxa2=idxa[0]#0
-
-        input_span_mask = np.zeros((max_seq_length, max_seq_length))
-        # 0 count for [CLS] and select_doc_len+1 count for [SEP]
-        input_span_mask[1:len(tokens_a) + 1, 1:len(tokens_a) + 1] = context_text_span_mask[idxa2:, idxa2:]###
-
-        record_mask = []
-        for i in range(max_seq_length):
-            i_mask = []
-            for j in range(max_seq_length):
-                if input_span_mask[i, j] == 1:
-                    i_mask.append(j)
-            record_mask.append(i_mask)
-
-        text_len=len(tokens_a)
-
+        tokens_b = None
+        if example.text_b:
+            tokens_b = tokenizer.tokenize(example.text_b)
+            # Modifies `tokens_a` and `tokens_b` in place so that the total
+            # length is less than the specified length.
+            # Account for [CLS], [SEP], [SEP] with "- 3"
+            _truncate_seq_pair(tokens_a, tokens_b, max_seq_length - 3)
+        else:
+            # Account for [CLS] and [SEP] with "- 2"
+            if len(tokens_a) > max_seq_length - 2:
+                tokens_a = tokens_a[:(max_seq_length - 2)]
         tokens = ["[CLS]"] + tokens_a + ["[SEP]"]
-        segment_ids = [0] * (len(tokens))
+        segment_ids = [0] * len(tokens)
+
+        if tokens_b:
+            tokens += tokens_b + ["[SEP]"]
+            segment_ids += [1] * (len(tokens_b) + 1)
 
         input_ids = tokenizer.convert_tokens_to_ids(tokens)
-        # # The mask has 1 for real tokens and 0 for padding tokens. Only real
-        # # tokens are attended to.
+
+        # The mask has 1 for real tokens and 0 for padding tokens. Only real
+        # tokens are attended to.
         input_mask = [1] * len(input_ids)
+
         # Zero-pad up to the sequence length.
         padding = [0] * (max_seq_length - len(input_ids))
         input_ids += padding
@@ -305,34 +175,12 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
         assert len(input_ids) == max_seq_length
         assert len(input_mask) == max_seq_length
         assert len(segment_ids) == max_seq_length
-        assert (text_len) <= max_seq_length
-
-        choices_features.append(
-            (tokens, input_ids, input_mask, segment_ids, text_len, record_mask))
-        # if example.label == "0":
-        #     label_id = 100
-        # else:
-        #     label_id = label_map[example.label]
-        # if example < 5:
-        #     logger.info("*** Example ***")
-        #     logger.info("guid: %s" % (example.guid))
-        #     logger.info("tokens: %s" % " ".join(
-        #             [str(x) for x in tokens]))
-        #     logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-        #     logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
-        #     logger.info(
-        #             "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
-        #     logger.info("label: %s (id = %d)" % (example.label, label_id))
-
-        label = example.label
+        label_id=example.label
         features.append(
-            InputFeatures(
-                example_id=example.seid,
-                choices_features=choices_features,
-                label=label
-            )
-        )
-
+            InputFeatures(input_ids=input_ids,
+                          input_mask=input_mask,
+                          segment_ids=segment_ids,
+                          label_id=label_id))
     return features
 
 
@@ -343,21 +191,14 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
     # one token at a time. This makes more sense than truncating an equal percent
     # of tokens from each, since if one sequence is very short then each token
     # that's truncated likely contains more information than a longer sequence.
-    idx_a = list(range(len(tokens_a)))#新增
-    idx_b = list(range(len(tokens_b)))#新增
     while True:
-
         total_length = len(tokens_a) + len(tokens_b)
         if total_length <= max_length:
             break
         if len(tokens_a) > len(tokens_b):
-            tokens_a.pop(0)
-            idx_a.pop(0)
+            tokens_a.pop()
         else:
-            tokens_b.pop(0)
-            idx_b.pop(0)
-
-    return idx_a[0], idx_b[0]
+            tokens_b.pop()
 
 #一样
 def accuracy(out, labels):
@@ -380,37 +221,6 @@ def warmup_linear(x, warmup=0.002):
         return x / warmup
     return 1.0 - x
 
-####新增
-def copy_optimizer_params_to_model(named_params_model, named_params_optimizer):
-    """ Utility function for optimize_on_cpu and 16-bits training.
-        Copy the parameters optimized on CPU/RAM back to the model on GPU
-    """
-    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer, named_params_model):
-        if name_opti != name_model:
-            logger.error("name_opti != name_model: {} {}".format(name_opti, name_model))
-            raise ValueError
-        param_model.data.copy_(param_opti.data)
-
-####新增
-def set_optimizer_params_grad(named_params_optimizer, named_params_model, test_nan=False):
-    """ Utility function for optimize_on_cpu and 16-bits training.
-        Copy the gradient of the GPU parameters to the CPU/RAMM copy of the model
-    """
-    is_nan = False
-    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer, named_params_model):
-        if name_opti != name_model:
-            logger.error("name_opti != name_model: {} {}".format(name_opti, name_model))
-            raise ValueError
-        if param_model.grad is not None:
-            if test_nan and torch.isnan(param_model.grad).sum() > 0:
-                is_nan = True
-            if param_opti.grad is None:
-                param_opti.grad = torch.nn.Parameter(param_opti.data.new().resize_(*param_opti.data.size()))
-            param_opti.grad.data.copy_(param_model.grad.data)
-        else:
-            param_opti.grad = None
-    return is_nan
-
 def evaluate(model, dataloader,dev_features,device):
 
     model.eval()
@@ -418,26 +228,14 @@ def evaluate(model, dataloader,dev_features,device):
     eval_loss, eval_accuracy = 0, 0
     nb_eval_steps, nb_eval_examples = 0, 0
 
-    for input_ids, input_mask, segment_ids, label_ids, example_index in dataloader:
+    for input_ids, input_mask, segment_ids, label_ids in dataloader:
         input_ids = input_ids.to(device)
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
-        # 新增开始,和do_train部分一样
-        input_span_mask = np.zeros((input_ids.size(0), input_ids.size(1), input_ids.size(2), input_ids.size(2)))
-        for batch_idx, ex_idx in enumerate(example_index):
-            dev_feature = dev_features[ex_idx.item()]
-            choice_features = dev_feature.choices_features
-            for idx, choice_fea in enumerate(choice_features):
-                span_mask = choice_fea["input_span_mask"]
-                for i, i_mask in enumerate(span_mask):
-                    for j in i_mask:
-                        input_span_mask[batch_idx, idx, i, j] = 1
-        input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
-        # 新增结束
         with torch.no_grad():
 
-            logits = model(input_ids, segment_ids, input_mask, input_span_mask=input_span_mask)
+            logits = model(input_ids, segment_ids, input_mask)
 
         logits = logits.detach().cpu().numpy()
         label_ids = label_ids.to('cpu').numpy()
@@ -473,17 +271,8 @@ def main():
     parser.add_argument("--test_file",
                         default='data/sem/ntest.tsv',
                         type=str)
-    parser.add_argument("--train_tag_file",
-                        default='data/sem/output_sgnet_ntrain.json',
-                        type=str)
-    parser.add_argument("--test_tag_file",
-                        default='data/sem/output_sgnet_ntest.json',
-                        type=str)
     parser.add_argument("--dev_file",
                         default='data/sem/ndev.tsv',
-                        type=str)
-    parser.add_argument("--dev_tag_file",
-                        default='data/sem/output_sgnet_ndev.json',
                         type=str)
     parser.add_argument('--n_gpu',
                         type=int, default=2,
@@ -571,42 +360,6 @@ def main():
     #                     type=list,
     #                     help="我自己加的类别标签")#不知道有没有用
 
-    ## 没用参数
-    '''
-    parser.add_argument("--data_dir",
-                        type=str,
-                        help="The input data dir. Should contain the .csv files (or other data files) for the task.")    
-    parser.add_argument("--model_name",
-                        default='output_batch4_fp16.bin',
-                        type=str,
-                        help="The output directory where the model checkpoints will be written.")
-    parser.add_argument("--dev_file",
-                        default='dev.json',
-                        type=str)
-    parser.add_argument("--dev_tag_file",
-                        default='output_sem_dev.json',
-                        type=str)
-    parser.add_argument("--sa_file",#这是什么
-                        default='sample_nsp_train_dev.json',
-                        type=str)
-    parser.add_argument("--test_middle",
-                        default='testmiddle.json',
-                        type=str)
-    parser.add_argument("--test_high",
-                        default='testhigh.json',
-                        type=str)
-    parser.add_argument("--mid_high",
-                        default=True,
-                        help="Whether to run training.")
-    parser.add_argument("--do_sa",#这是什么
-                        default=False,
-                        action='store_true',
-                        help="Whether to run training.")
-    parser.add_argument("--load_ft",#这是什么
-                        default=False,
-                        action='store_true',
-                        help="Set this flag if you are using an uncased model.")
-    '''
 
     args = parser.parse_args()
     logger.info(args)
@@ -649,18 +402,16 @@ def main():
     #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
     #                                                           args.local_rank),
     #                                                       num_labels=5)###要改这个
-    model = BertForMultipleChoiceSpanMask2.from_pretrained(args.bert_model,
+    model = BertForSequenceClassification.from_pretrained(args.bert_model,
                                                           cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
                                                               args.local_rank),
-                                                          num_choices=5)###要改这个
+                                                          num_labels=5)###要改这个
     train_examples = None
     num_train_steps = None
 
     if args.do_train:
-        train_examples = read_sem_examples(args.train_file, args.train_tag_file,
-                                            is_training=True)###要改这个
-        dev_examples = read_sem_examples(args.dev_file, args.dev_tag_file,
-                                            is_training=True)###要改这个
+        train_examples = read_sem_examples(args.train_file,is_training=True)
+        dev_examples = read_sem_examples(args.dev_file,is_training=True)
         num_train_steps = int(
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
@@ -750,20 +501,16 @@ def main():
             writer.write("  Num examples = %d\t\n" % len(dev_examples))
             writer.write("  Batch size = %d\t\n" % args.dev_batch_size)
 
-        all_input_ids = torch.tensor(select_field(train_features, 'input_ids'), dtype=torch.long)
-        all_input_mask = torch.tensor(select_field(train_features, 'input_mask'), dtype=torch.long)
-        all_segment_ids = torch.tensor(select_field(train_features, 'segment_ids'), dtype=torch.long)
-        all_label = torch.tensor([f.label for f in train_features], dtype=torch.long)
-        all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)##新增
-
-        dall_input_ids = torch.tensor(select_field(dev_features, 'input_ids'), dtype=torch.long)
-        dall_input_mask = torch.tensor(select_field(dev_features, 'input_mask'), dtype=torch.long)
-        dall_segment_ids = torch.tensor(select_field(dev_features, 'segment_ids'), dtype=torch.long)
-        dall_label = torch.tensor([f.label for f in dev_features], dtype=torch.long)
-        dall_example_index = torch.arange(dall_input_ids.size(0), dtype=torch.long)##新增
-
-        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label, all_example_index)
-        dev_data = TensorDataset(dall_input_ids, dall_input_mask, dall_segment_ids, dall_label, dall_example_index)
+        all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
+        all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
+        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+        dall_input_ids = torch.tensor([f.input_ids for f in dev_features], dtype=torch.long)
+        dall_input_mask = torch.tensor([f.input_mask for f in dev_features], dtype=torch.long)
+        dall_segment_ids = torch.tensor([f.segment_ids for f in dev_features], dtype=torch.long)
+        dall_label_ids = torch.tensor([f.label_id for f in dev_features], dtype=torch.long)
+        dev_data = TensorDataset(dall_input_ids, dall_input_mask, dall_segment_ids, dall_label_ids)
 
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
@@ -780,7 +527,7 @@ def main():
         best_acc = 0
         early_stop_times = 0
 
-        for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
+        for _ in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
                 break
@@ -794,21 +541,9 @@ def main():
                 model.train()  # 这个位置到底在哪
 
                 batch = tuple(t.to(device) for t in batch)
-                input_ids, input_mask, segment_ids, label_ids, example_index = batch#新增example_index
-                #新增开始，input_span_mask----race是0，1，2，2四维.squad是0，1，1三维
-                input_span_mask = np.zeros((input_ids.size(0), input_ids.size(1), input_ids.size(2), input_ids.size(2)))
-                for batch_idx, ex_idx in enumerate(example_index):
-                    train_feature = train_features[ex_idx.item()]
-                    choice_features = train_feature.choices_features
-                    for idx, choice_fea in enumerate(choice_features):
-                        train_span_mask = choice_fea["input_span_mask"]
-                        for i, i_mask in enumerate(train_span_mask):###race比squad多这个i
-                            for j in i_mask:
-                                input_span_mask[batch_idx, idx, i, j] = 1
-                input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
+                input_ids, input_mask, segment_ids, label_ids = batch#新增example_index
                 #新增结束---
-                loss = model(input_ids, segment_ids, input_mask, label_ids,
-                             input_span_mask=input_span_mask)#新增input_span_mask
+                loss = model(input_ids, segment_ids, input_mask, label_ids)
                 if n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.fp16 and args.loss_scale != 1.0:
@@ -899,8 +634,8 @@ def main():
         model_state_dict = torch.load(output_model_file)
         # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
         #                                                       num_labels=5)###改
-        model = BertForMultipleChoiceSpanMask2.from_pretrained(args.bert_model, state_dict=model_state_dict,
-                                                              num_choices=5)
+        model = BertForSequenceClassification.from_pretrained(args.bert_model, state_dict=model_state_dict,
+                                                              num_labels=5)
         model.to(device)
         logger.info("Start evaluating")
 
@@ -914,22 +649,10 @@ def main():
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
             label_ids = label_ids.to(device)
-            #新增开始,和do_train部分一样
-            input_span_mask = np.zeros((input_ids.size(0), input_ids.size(1), input_ids.size(2), input_ids.size(2)))
-            for batch_idx, ex_idx in enumerate(example_index):
-                total_eval_feature = total_eval_features[ex_idx.item()]
-                choice_features = total_eval_feature.choices_features
-                for idx, choice_fea in enumerate(choice_features):
-                    span_mask = choice_fea["input_span_mask"]
-                    for i, i_mask in enumerate(span_mask):
-                        for j in i_mask:
-                            input_span_mask[batch_idx, idx, i, j] = 1
-            input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
-            #新增结束
+
             with torch.no_grad():
-                tmp_eval_loss = model(input_ids, segment_ids, input_mask, label_ids,
-                                      input_span_mask=input_span_mask)
-                logits = model(input_ids, segment_ids, input_mask, input_span_mask=input_span_mask)
+                tmp_eval_loss = model(input_ids, segment_ids, input_mask, label_ids)
+                logits = model(input_ids, segment_ids, input_mask)
 
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
