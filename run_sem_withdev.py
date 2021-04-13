@@ -874,6 +874,10 @@ def main():
 
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
         #     TrainLoss = pickle.load(f)
+        text, y, gid = rea_sem(args.test_file)#为了读文本新增这一行
+        #dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
+        df=pd.pd.DataFrame(columns=['text', 'label', 'predict_label'])
+        df['text']=text
 
         eval_examples = read_sem_examples(args.test_file, args.test_tag_file,
                                            is_training=True)###要改！！
@@ -918,6 +922,7 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
+
         for input_ids, input_mask, segment_ids, label_ids, example_index in eval_dataloader:
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
@@ -942,13 +947,23 @@ def main():
 
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
-            tmp_eval_accuracy = accuracy(logits, label_ids)
+            tmp_eval_accuracy = accuracy(logits, label_ids)#一个eval_batch中预测对的个数,均为0-4
+
+
+            for lo in logits:
+                df['predict_label'].append(np.argmax(lo, axis=1))
+            for labe in label_ids:
+                df['label'].append(labe+1)
 
             eval_loss += tmp_eval_loss.mean().item()
             eval_accuracy += tmp_eval_accuracy
 
             nb_eval_examples += input_ids.size(0)
             nb_eval_steps += 1
+
+        print('打印')
+        print(df)
+        exit()
 
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
