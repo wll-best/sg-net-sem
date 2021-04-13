@@ -876,7 +876,7 @@ def main():
         #     TrainLoss = pickle.load(f)
         text, y, gid = rea_sem(args.test_file)#为了读文本新增这一行
         #dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
-        df=pd.pd.DataFrame(columns=['text', 'label', 'predict_label'])
+        df=pd.DataFrame(columns=['text', 'label', 'predict_label'])
         df['text']=text
 
         eval_examples = read_sem_examples(args.test_file, args.test_tag_file,
