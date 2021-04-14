@@ -965,7 +965,7 @@ def main():
 
         df['predict_label']=sum(predict_label_li,[])   
         df['label']=sum(label_li,[])#这个label_li是标签减去1，即索引的列表。sum这个函数是将二维列表变一维列表      
-        df.to_csv("ntest.tsv",sep='\t')
+        df.to_csv("ntest_label.tsv",sep='\t')
 
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
