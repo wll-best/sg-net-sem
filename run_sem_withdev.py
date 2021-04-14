@@ -741,7 +741,7 @@ def main():
             max_seq_length=args.max_seq_length
         )
 
-        logger.info("***** Running training *****")
+        logger.info("***** Running training *****sg-net-sem")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_steps)
@@ -888,7 +888,7 @@ def main():
             ##label_list=args.label_list)  # label_list要不要呢？先加上吧
 
         eval_features = total_eval_features
-        logger.info("***** Running evaluation *****")
+        logger.info("***** Running evaluation *****sg-net-sem")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
         all_input_ids = torch.tensor(select_field(eval_features, 'input_ids'), dtype=torch.long)
@@ -952,8 +952,7 @@ def main():
 
             tmp_eval_accuracy = accuracy(logits, label_ids)#一个eval_batch中预测对的个数,均为0-4
             
-            label_li.append(label_ids.tolist())        
-     
+            label_li.append(label_ids.tolist())
             predict_label_li.append(np.argmax(logits,axis=1).tolist())
 
             eval_loss += tmp_eval_loss.mean().item()
@@ -965,7 +964,7 @@ def main():
 
         df['predict_label']=sum(predict_label_li,[])   
         df['label']=sum(label_li,[])#这个label_li是标签减去1，即索引的列表。sum这个函数是将二维列表变一维列表      
-        df.to_csv("ntest_label.tsv",sep='\t')
+        df.to_csv("ntest_sg_label.tsv",sep='\t')
 
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples

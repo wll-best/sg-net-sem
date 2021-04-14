@@ -476,7 +476,7 @@ def main():
             label_list = label_list
         )
 
-        logger.info("***** Running training *****")
+        logger.info("***** Running training *****bert-sem")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_steps)
@@ -593,7 +593,10 @@ def main():
 
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
         #     TrainLoss = pickle.load(f)
-
+        text_li, _, _ = rea_sem(args.test_file)  # 为了读文本新增这一行
+        # dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
+        df = pd.DataFrame(columns=['text', 'label', 'predict_label'])
+        df['text'] = text_li
         eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
@@ -604,7 +607,7 @@ def main():
             ##label_list=args.label_list)  # label_list要不要呢？先加上吧
 
         eval_features = total_eval_features
-        logger.info("***** Running evaluation *****")
+        logger.info("***** Running evaluation *****bert-sem")
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
 
@@ -636,6 +639,9 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
+
+        label_li=[]
+        predict_label_li=[]
         for input_ids, input_mask, segment_ids, label_ids in eval_dataloader:
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
@@ -648,13 +654,21 @@ def main():
 
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
-            tmp_eval_accuracy = accuracy(logits, label_ids)
+
+            tmp_eval_accuracy = accuracy(logits, label_ids)#一个eval_batch中预测对的个数,均为0-4
+
+            label_li.append(label_ids.tolist())
+            predict_label_li.append(np.argmax(logits,axis=1).tolist())
 
             eval_loss += tmp_eval_loss.mean().item()
             eval_accuracy += tmp_eval_accuracy
 
             nb_eval_examples += input_ids.size(0)
             nb_eval_steps += 1
+
+        df['predict_label']=sum(predict_label_li,[])
+        df['label']=sum(label_li,[])#这个label_li是标签减去1，即索引的列表。sum这个函数是将二维列表变一维列表
+        df.to_csv("ntest_bert_label.tsv",sep='\t')
 
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
