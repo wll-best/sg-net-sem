@@ -1681,11 +1681,11 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         all_encoder_layers, _ = self.bert(flat_input_ids, flat_token_type_ids, flat_attention_mask,
                                           output_all_encoded_layers=True)
 
-        sequence_output = all_encoder_layers[-1]
+        sequence_output = all_encoder_layers[-1]##取最后一层隐层
         sequence_output = self.dropout(sequence_output)
 
         # span_attention_mask
-        extended_span_attention_mask = input_span_mask.unsqueeze(1)
+        extended_span_attention_mask = input_span_mask.unsqueeze(1)#在第二维增加一个维度1
         extended_span_attention_mask = extended_span_attention_mask.to(
             dtype=next(self.parameters()).dtype)  # fp16 compatibility
         extended_span_attention_mask = (1.0 - extended_span_attention_mask) * -10000.0
@@ -1701,6 +1701,8 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)#原来的做加法
         # sequence_output=torch.cat([sequence_output,span_sequence_output],2)###改成拼接
         # sequence_output=self.ddd(sequence_output)###改成拼接
+
+        #交互注意力
 
         pooled_output = self.pooler(sequence_output)
         ###结束变化
