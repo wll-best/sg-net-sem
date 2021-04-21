@@ -673,10 +673,7 @@ def main():
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
 
-        result = {'eval_loss': eval_loss,
-                  'eval_accuracy': eval_accuracy,
-                  'macro_f1': macro_f1
-                  }
+        result = {'eval_accuracy': eval_accuracy,'macro_f1':macro_f1}
 
         with open(output_eval_file, "a") as writer:
             logger.info("***** Eval results *****")
