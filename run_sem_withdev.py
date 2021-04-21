@@ -921,7 +921,6 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
-        macro_f1=0
         label_li=[]
         predict_label_li=[]
         for input_ids, input_mask, segment_ids, label_ids, example_index in eval_dataloader:

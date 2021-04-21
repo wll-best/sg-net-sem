@@ -41,7 +41,7 @@ from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import *
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
-
+from sklearn import metrics
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
@@ -669,12 +669,14 @@ def main():
         df['predict_label']=sum(predict_label_li,[])
         df['label']=sum(label_li,[])#这个label_li是标签减去1，即索引的列表。sum这个函数是将二维列表变一维列表
         df.to_csv("ntest_bert_label.tsv",sep='\t')
-
+        macro_f1 = metrics.f1_score(sum(predict_label_li,[]),sum(label_li,[]),labels=[0,1,2,3,4], average='macro')
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
 
         result = {'eval_loss': eval_loss,
-                  'eval_accuracy': eval_accuracy}
+                  'eval_accuracy': eval_accuracy,
+                  'macro_f1': macro_f1
+                  }
 
         with open(output_eval_file, "a") as writer:
             logger.info("***** Eval results *****")
