@@ -1,6 +1,6 @@
 import csv
 import random
-
+from sklearn import metrics
 #将数据集中的$T$改成T，生成_t结尾的文件
 def chgt(fin,fout):
 
@@ -83,31 +83,46 @@ def ntest_label_split(bdf_14,bdf_15,bdf_16,ntest):
         row14=[]
         row15=[]
         row16=[]
-        rightnum14=0
+        rightnum14 = 0
         rightnum15 = 0
         rightnum16 = 0
+        target_li_14=[]
+        out_li_14=[]
+        target_li_15=[]
+        out_li_15=[]
+        target_li_16=[]
+        out_li_16=[]
         for line in reader:
             lines.append(line)
             if line[1] in f14_li:#如果该文本在14中
                 row14.append(line)
+                target_li_14.append(line[2])
+                out_li_14.append(line[3])
                 if line[2]==line[3]:
                     rightnum14+=1
             if line[1] in f15_li:#如果该文本在15中
                 row15.append(line)
+                target_li_15.append(line[2])
+                out_li_15.append(line[3])
                 if line[2]==line[3]:
                     rightnum15+=1
             if line[1] in f16_li:#如果该文本在16中
                 row16.append(line)
+                target_li_16.append(line[2])
+                out_li_16.append(line[3])
                 if line[2]==line[3]:
                     rightnum16+=1
 
         acc14 = rightnum14 / len(row14)
         acc15 = rightnum15 / len(row15)
         acc16 = rightnum16 / len(row16)
+        macro_f1_14 = metrics.f1_score(target_li_14, out_li_14, labels=[0, 1, 2,3,4],average='macro')
+        macro_f1_15 = metrics.f1_score(target_li_15, out_li_15, labels=[0, 1, 2,3,4],average='macro')
+        macro_f1_16 = metrics.f1_score(target_li_16, out_li_16, labels=[0, 1, 2,3,4],average='macro')
 
-        print('14正确的数目' + str(rightnum14) + ',  14总数目' + str(len(row14)) + ',  14的准确率：' + str(acc14))
-        print('15正确的数目' + str(rightnum15) + ',  15总数目' + str(len(row15)) + ',  15的准确率：' + str(acc15))
-        print('16正确的数目' + str(rightnum16) + ',  16总数目' + str(len(row16)) + ',  16的准确率：' + str(acc16))
+        print('14正确的数目' + str(rightnum14) + ',  14总数目' + str(len(row14)) + ',  14的准确率：' + str(acc14)+',  14的macro_f1：' + str(macro_f1_14))
+        print('15正确的数目' + str(rightnum15) + ',  15总数目' + str(len(row15)) + ',  15的准确率：' + str(acc15)+',  15的macro_f1：' + str(macro_f1_15))
+        print('16正确的数目' + str(rightnum16) + ',  16总数目' + str(len(row16)) + ',  16的准确率：' + str(acc16)+',  16的macro_f1：' + str(macro_f1_16))
 
 
 
