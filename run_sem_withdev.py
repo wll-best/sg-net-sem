@@ -41,12 +41,15 @@ from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import *
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
+from sklearn import metrics
+from tensorboardX import SummaryWriter
+import time
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
-from sklearn import metrics
+
 
 class SemExample(object):
     """A single training/test example for simple sequence classification."""
@@ -420,10 +423,24 @@ def set_optimizer_params_grad(named_params_optimizer, named_params_model, test_n
             param_opti.grad = None
     return is_nan
 
-def evaluate(model, dataloader,dev_features,device):
+def classifiction_metric(preds, labels, label_list):
+    """ 分类任务的评价指标， 传入的数据需要是 numpy 类型的 """
+
+    acc = metrics.accuracy_score(labels, preds)
+
+    labels_list = [i for i in range(len(label_list))]
+    #多标签分类：micro - F1 = micro - precision = micro - recall = accuracy
+    report = metrics.classification_report(labels, preds, labels=labels_list, target_names=label_list, digits=5, output_dict=True)
+    #digits：int，输出浮点值的位数．
+
+    return acc, report
+
+def evaluate(model, dataloader, criterion, device, label_list,dev_features):#增加dev_features
 
     model.eval()
-
+    all_preds = np.array([], dtype=int)
+    all_labels = np.array([], dtype=int)
+    epoch_loss = 0
     eval_loss, eval_accuracy = 0, 0
     nb_eval_steps, nb_eval_examples = 0, 0
 
@@ -445,20 +462,30 @@ def evaluate(model, dataloader,dev_features,device):
         input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
         # 新增结束
         with torch.no_grad():
+            logits = model(input_ids, segment_ids, input_mask, labels=None, input_span_mask=input_span_mask)
+        loss = criterion(logits.view(-1, len(label_list)), label_ids.view(-1))
+        preds = logits.detach().cpu().numpy()
+        outputs = np.argmax(preds, axis=1)
+        all_preds = np.append(all_preds, outputs)
 
-            logits = model(input_ids, segment_ids, input_mask, input_span_mask=input_span_mask)
-
-        logits = logits.detach().cpu().numpy()
         label_ids = label_ids.to('cpu').numpy()
-        tmp_eval_accuracy = accuracy(logits, label_ids)
+        all_labels = np.append(all_labels, label_ids)
 
-        eval_accuracy += tmp_eval_accuracy
+        epoch_loss += loss.mean().item()
 
-        nb_eval_examples += input_ids.size(0)
-        nb_eval_steps += 1
-
-    eval_accuracy = eval_accuracy / nb_eval_examples
-    return eval_accuracy
+    acc, report = classifiction_metric(all_preds, all_labels, label_list)
+    return epoch_loss/len(dataloader), acc, report
+    #     logits = logits.detach().cpu().numpy()
+    #     label_ids = label_ids.to('cpu').numpy()
+    #     tmp_eval_accuracy = accuracy(logits, label_ids)
+    #
+    #     eval_accuracy += tmp_eval_accuracy
+    #
+    #     nb_eval_examples += input_ids.size(0)
+    #     nb_eval_steps += 1
+    #
+    # eval_accuracy = eval_accuracy / nb_eval_examples
+    # return eval_accuracy
 
 def main():
     parser = argparse.ArgumentParser()
@@ -561,7 +588,7 @@ def main():
                         action='store_true',
                         help="Whether to use 16-bit float precision instead of 32-bit")
     parser.add_argument('--loss_scale',
-                        type=float, default=5,#原来是4
+                        type=float, default=4,#原来是4
                         help='Loss scaling, positive power of 2 values can improve fp16 convergence.')
     #增加dev集
 
@@ -574,11 +601,14 @@ def main():
                         type=int,
                         help="多少步进行模型保存以及日志信息写入")
     parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev loss 连续增大，就不再训练")
-
-    # parser.add_argument("--label_list",
-    #                     default=["1", "2", "3", "4", "5"],
-    #                     type=list,
-    #                     help="我自己加的类别标签")#不知道有没有用
+    parser.add_argument("--log_dir",
+                        default="log_dir",
+                        type=str,
+                        help="日志目录，主要用于 tensorboard 分析")
+    parser.add_argument("--label_list",
+                        default=["0","1", "2", "3", "4"],
+                        type=list,
+                        help="我自己加的类别标签")#不知道有没有用
 
     ## 没用参数
     '''
@@ -621,6 +651,7 @@ def main():
     logger.info(args)
     output_eval_file = os.path.join(args.output_dir, args.output_file)
     os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(args.log_dir, exist_ok=True)#如果已经存在，不抛出异常
 
     with open(output_eval_file, "w") as writer:
         writer.write("%s\t\n" % args)
@@ -687,7 +718,7 @@ def main():
         model = DDP(model)
     elif n_gpu > 1:
         model = torch.nn.DataParallel(model)
-
+    """ 优化器准备 """
     param_optimizer = list(model.named_parameters())
 
     # hack to remove pooler, which is not used
@@ -728,7 +759,8 @@ def main():
 
 
     if args.do_train:
-
+        criterion = nn.CrossEntropyLoss()
+        criterion = criterion.to(device)
         train_features = convert_examples_to_features(
             examples=train_examples,
             tokenizer=tokenizer,
@@ -788,14 +820,21 @@ def main():
         global_step = 0
         best_acc = 0
         early_stop_times = 0
+
+        writer = SummaryWriter(
+            log_dir=args.log_dir + '/' + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime(time.time())))
+
         wode = 0
+
         for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
                 break
+            print(f'---------------- Epoch: {epoch + 1:02} ----------')
 
-            #tr_loss = 0
             epoch_loss = 0
+            all_preds = np.array([], dtype=int)
+            all_labels = np.array([], dtype=int)
             nb_tr_examples, train_steps = 0, 0
 
             for step, batch in enumerate(tqdm(train_dataloader, ncols=50, desc="Iteration")):#新增ncols，进度条长度。默认是10
@@ -816,8 +855,11 @@ def main():
                                 input_span_mask[batch_idx, idx, i, j] = 1
                 input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
                 #新增结束---
-                loss = model(input_ids, segment_ids, input_mask, label_ids,
-                             input_span_mask=input_span_mask)#新增input_span_mask
+                logits = model(input_ids, segment_ids, input_mask, labels=None,input_span_mask=input_span_mask)
+                # loss = model(input_ids, segment_ids, input_mask, label_ids,
+                #              input_span_mask=input_span_mask)#新增input_span_mask
+                loss=criterion(logits, label_ids)
+
                 if n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.fp16 and args.loss_scale != 1.0:
@@ -836,7 +878,13 @@ def main():
                 else:
                     loss.backward()
 
+                # 用于画图和分析的数据
                 epoch_loss += loss.item()
+                preds = logits.detach().cpu().numpy()
+                outputs = np.argmax(preds, axis=1)
+                all_preds = np.append(all_preds, outputs)
+                label_ids = label_ids.to('cpu').numpy()
+                all_labels = np.append(all_labels, label_ids)
 
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
@@ -851,8 +899,30 @@ def main():
                     if global_step % args.print_step == 0 and global_step != 0:
 
                         wode+=1
+                        """ 打印Train此时的信息 """
                         train_loss = epoch_loss / train_steps
-                        dev_acc = evaluate(model, dev_dataloader, dev_features,device)
+                        train_acc, train_report = classifiction_metric(all_preds, all_labels, args.label_list)
+                        dev_loss, dev_acc, dev_report = evaluate(model, dev_dataloader, criterion, device, args.label_list, dev_features)
+
+                        c = global_step // args.print_step
+                        writer.add_scalar("loss/train", train_loss, c)
+                        writer.add_scalar("loss/dev", dev_loss, c)
+
+                        writer.add_scalar("acc/train", train_acc, c)
+                        writer.add_scalar("acc/dev", dev_acc, c)
+
+                        for label in args.label_list:
+                            writer.add_scalar(label + ":" + "f1/train", train_report[label]['f1-score'], c)
+                            writer.add_scalar(label + ":" + "f1/dev",
+                                              dev_report[label]['f1-score'], c)
+
+                        print_list = ['macro avg', 'weighted avg']
+                        for label in print_list:
+                            writer.add_scalar(label + ":" + "f1/train",
+                                              train_report[label]['f1-score'], c)
+                            writer.add_scalar(label + ":" + "f1/dev",
+                                              dev_report[label]['f1-score'], c)
+
                         # 以 acc 取优
                         if dev_acc > best_acc:
                             best_acc = dev_acc
@@ -873,6 +943,8 @@ def main():
         #     pickle.dump(TrainLoss, f)
         print('打印global_step：'+str(global_step))
         print('打印wode:'+str(wode))
+    writer.close()
+
     if args.do_eval:
 
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
@@ -912,6 +984,10 @@ def main():
         #train_loss = TrainLoss[epoch]
         output_model_file = os.path.join(args.output_dir, "_pytorch_model.bin")
         model_state_dict = torch.load(output_model_file)
+        # 损失函数准备
+        criterion = nn.CrossEntropyLoss()
+        criterion = criterion.to(device)
+
         # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
         #                                                       num_labels=5)###改
         model = BertForMultipleChoiceSpanMask2.from_pretrained(args.bert_model, state_dict=model_state_dict,

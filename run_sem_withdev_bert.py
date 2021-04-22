@@ -331,7 +331,7 @@ def main():
                         action='store_true',
                         help="Whether to use 16-bit float precision instead of 32-bit")
     parser.add_argument('--loss_scale',
-                        type=float, default=5,#原来是4
+                        type=float, default=4,#原来是4
                         help='Loss scaling, positive power of 2 values can improve fp16 convergence.')
     #增加dev集
 
