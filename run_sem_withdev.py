@@ -913,12 +913,12 @@ def main():
                             writer.add_scalar(label + "_" + "f1/dev",
                                               dev_report[label]['f1-score'], c)
 
-                        print_list = ['macro_avg', 'weighted_avg']
+                        print_list = ['macro', 'weighted']
                         for label in print_list:
-                            writer.add_scalar(label + "_" + "f1/train",
-                                              train_report[label]['f1-score'], c)
-                            writer.add_scalar(label + "_" + "f1/dev",
-                                              dev_report[label]['f1-score'], c)
+                            writer.add_scalar(label + "_avg_" +"f1/train",
+                                              train_report[label+' avg']['f1-score'], c)
+                            writer.add_scalar(label + "_avg_" + "f1/dev",
+                                              dev_report[label+' avg']['f1-score'], c)
 
                         # 以 acc 取优
                         if dev_acc > best_acc:
