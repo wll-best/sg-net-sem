@@ -913,7 +913,7 @@ def main():
                             writer.add_scalar(label + "_" + "f1/dev",
                                               dev_report[label]['f1-score'], c)
 
-                        print_list = ['macro avg', 'weighted avg']
+                        print_list = ['macro_avg', 'weighted_avg']
                         for label in print_list:
                             writer.add_scalar(label + "_" + "f1/train",
                                               train_report[label]['f1-score'], c)
