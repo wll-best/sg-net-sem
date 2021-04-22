@@ -702,7 +702,7 @@ def main():
 
     t_total = num_train_steps
     if args.local_rank != -1:
-        t_total = t_total // torch.distributed.get_world_size()
+        t_total = t_total // torch.distributed.get_world_size()#取整除 - 返回商的整数部分（向下取整） 9//2=4 -9//2=-5
 
     if args.fp16:
         try:
@@ -788,7 +788,7 @@ def main():
         global_step = 0
         best_acc = 0
         early_stop_times = 0
-
+        wode = 0
         for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
@@ -847,8 +847,9 @@ def main():
                     optimizer.zero_grad()
                     global_step += 1
 
-                    #新增dev数据集调参
+                    #新增dev数据集调参--global_step是print_step的倍数才执行下面的
                     if global_step % args.print_step == 0 and global_step != 0:
+                        wode+=1
                         train_loss = epoch_loss / train_steps
                         dev_acc = evaluate(model, dev_dataloader, dev_features,device)
                         # 以 acc 取优
@@ -870,6 +871,7 @@ def main():
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'wb') as f:
         #     pickle.dump(TrainLoss, f)
         print('打印global_step：'+str(global_step))
+        print('打印wode:'+str(wode))
     if args.do_eval:
 
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
