@@ -869,7 +869,7 @@ def main():
         #
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'wb') as f:
         #     pickle.dump(TrainLoss, f)
-
+        print('打印global_step：'+str(global_step))
     if args.do_eval:
 
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
