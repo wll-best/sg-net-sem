@@ -912,15 +912,15 @@ def main():
                         writer.add_scalar("acc/dev", dev_acc, c)
 
                         for label in args.label_list:
-                            writer.add_scalar(label + ":" + "f1/train", train_report[label]['f1-score'], c)
-                            writer.add_scalar(label + ":" + "f1/dev",
+                            writer.add_scalar(label + "_" + "f1/train", train_report[label]['f1-score'], c)
+                            writer.add_scalar(label + "_" + "f1/dev",
                                               dev_report[label]['f1-score'], c)
 
                         print_list = ['macro avg', 'weighted avg']
                         for label in print_list:
-                            writer.add_scalar(label + ":" + "f1/train",
+                            writer.add_scalar(label + "_" + "f1/train",
                                               train_report[label]['f1-score'], c)
-                            writer.add_scalar(label + ":" + "f1/dev",
+                            writer.add_scalar(label + "_" + "f1/dev",
                                               dev_report[label]['f1-score'], c)
 
                         # 以 acc 取优
