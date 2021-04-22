@@ -570,7 +570,7 @@ def main():
                         type=int,
                         help="Total batch size for dev.")
     parser.add_argument("--print_step",
-                        default=100,
+                        default=50,
                         type=int,
                         help="多少步进行模型保存以及日志信息写入")
     parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev loss 连续增大，就不再训练")
@@ -848,8 +848,8 @@ def main():
                     global_step += 1
 
                     #新增dev数据集调参--global_step是print_step的倍数才执行下面的
-                    #if global_step % args.print_step == 0 and global_step != 0:#每一百步的模型存一次
-                    if global_step != 0:#每一步的模型都存着
+                    if global_step % args.print_step == 0 and global_step != 0:
+
                         wode+=1
                         train_loss = epoch_loss / train_steps
                         dev_acc = evaluate(model, dev_dataloader, dev_features,device)
