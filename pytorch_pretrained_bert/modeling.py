@@ -1705,15 +1705,24 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         # sequence_output=torch.cat([sequence_output,span_sequence_output],2)###2:改成拼接
         # sequence_output=self.ddd(sequence_output)###2:改成拼接
 
-        #交互注意力
+        #第一种：一个注意力att1
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,
+                                                                 span_sequence_output)
+        pooled_output = self.pooler(attn_output1)
 
-        #attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
-        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
-        #attn_output=torch.cat([attn_output1,attn_output2],2)
-
-        #sequence_output = self.ddd(attn_output2)
+        #第二种：一个注意力att2
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,
+                                                                 span_sequence_output)
         pooled_output = self.pooler(attn_output2)
-        #pooled_output = self.pooler(sequence_output)
+
+        #第三种：交互注意力
+
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
+        attn_output=torch.cat([attn_output1,attn_output2],2)
+        sequence_output = self.ddd(attn_output)
+        pooled_output = self.pooler(sequence_output)
+
         ###结束变化
         logits = self.classifier(pooled_output)
         #reshaped_logits = logits.view(-1, self.num_choices)
