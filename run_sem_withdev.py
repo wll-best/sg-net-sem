@@ -848,7 +848,8 @@ def main():
                     global_step += 1
 
                     #新增dev数据集调参--global_step是print_step的倍数才执行下面的
-                    if global_step % args.print_step == 0 and global_step != 0:
+                    #if global_step % args.print_step == 0 and global_step != 0:#每一百步的模型存一次
+                    if global_step != 0:#每一步的模型都存着
                         wode+=1
                         train_loss = epoch_loss / train_steps
                         dev_acc = evaluate(model, dev_dataloader, dev_features,device)
