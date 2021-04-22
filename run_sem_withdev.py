@@ -823,9 +823,7 @@ def main():
 
         writer = SummaryWriter(
             log_dir=args.log_dir + '/' + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime(time.time())))
-
-        wode = 0
-
+        num_model = 0
         for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
@@ -897,8 +895,7 @@ def main():
 
                     #新增dev数据集调参--global_step是print_step的倍数才执行下面的
                     if global_step % args.print_step == 0 and global_step != 0:
-
-                        wode+=1
+                        num_model+=1
                         """ 打印Train此时的信息 """
                         train_loss = epoch_loss / train_steps
                         train_acc, train_report = classifiction_metric(all_preds, all_labels, args.label_list)
@@ -942,7 +939,7 @@ def main():
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'wb') as f:
         #     pickle.dump(TrainLoss, f)
         print('打印global_step：'+str(global_step))
-        print('打印wode:'+str(wode))
+        print('打印num_model:'+str(num_model))
     writer.close()
 
     if args.do_eval:
@@ -984,9 +981,6 @@ def main():
         #train_loss = TrainLoss[epoch]
         output_model_file = os.path.join(args.output_dir, "_pytorch_model.bin")
         model_state_dict = torch.load(output_model_file)
-        # 损失函数准备
-        criterion = nn.CrossEntropyLoss()
-        criterion = criterion.to(device)
 
         # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
         #                                                       num_labels=5)###改
