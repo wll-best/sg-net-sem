@@ -824,6 +824,7 @@ def main():
         writer = SummaryWriter(
             log_dir=args.log_dir + '/' + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime(time.time())))
         num_model = 0
+        num_bestacc=0
         for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
@@ -922,6 +923,7 @@ def main():
 
                         # 以 acc 取优
                         if dev_acc > best_acc:
+                            num_bestacc+=1
                             best_acc = dev_acc
                             # Save a trained model
                             model_to_save = model.module if hasattr(model,
@@ -940,6 +942,7 @@ def main():
         #     pickle.dump(TrainLoss, f)
         print('打印global_step：'+str(global_step))
         print('打印num_model:'+str(num_model))
+        print('打印num_bestacc:'+str(num_bestacc))
     writer.close()
 
     if args.do_eval:
