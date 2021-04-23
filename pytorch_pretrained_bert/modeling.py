@@ -1723,7 +1723,7 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
         attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
         attn_output=torch.cat([attn_output1,attn_output2],2)
-        sequence_output = self.ddd(attn_output)
+        sequence_output = self.ddd(attn_output)#这里------损失多？？？
         pooled_output = self.pooler(sequence_output)
 
         #第三种对调前两个参数---32
