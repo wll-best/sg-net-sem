@@ -156,7 +156,7 @@ def read_sem_examples(input_file, input_tag_file, is_training):
 
     input_tag_data = []
 
-    simple_nlp = SimpleNlp()
+    #simple_nlp = SimpleNlp()
     with open(input_tag_file, "r", encoding='utf-8') as reader:
         for line in reader:
             input_tag_data.append(json.loads(line))
