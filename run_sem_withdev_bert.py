@@ -340,7 +340,7 @@ def main():
                         type=int,
                         help="Total batch size for dev.")
     parser.add_argument("--print_step",
-                        default=100,
+                        default=50,
                         type=int,
                         help="多少步进行模型保存以及日志信息写入")
     parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev loss 连续增大，就不再训练")
@@ -519,7 +519,8 @@ def main():
         global_step = 0
         best_acc = 0
         early_stop_times = 0
-
+        num_model = 0
+        num_bestacc=0
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
@@ -568,10 +569,12 @@ def main():
 
                     #新增dev数据集调参
                     if global_step % args.print_step == 0 and global_step != 0:
+                        num_model += 1
                         train_loss = epoch_loss / train_steps
                         dev_acc = evaluate(model, dev_dataloader, dev_features,device)
                         # 以 acc 取优
                         if dev_acc > best_acc:
+                            num_bestacc += 1
                             best_acc = dev_acc
                             # Save a trained model
                             model_to_save = model.module if hasattr(model,
@@ -588,6 +591,9 @@ def main():
         #
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'wb') as f:
         #     pickle.dump(TrainLoss, f)
+        print('打印global_step：'+str(global_step))
+        print('打印num_model:'+str(num_model))
+        print('打印num_bestacc:'+str(num_bestacc))
 
     if args.do_eval:
 
