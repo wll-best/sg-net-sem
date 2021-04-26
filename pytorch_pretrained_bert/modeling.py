@@ -38,7 +38,7 @@ import numpy as np###
 logger = logging.getLogger(__name__)
 ##后两个model是新增的
 PRETRAINED_MODEL_ARCHIVE_MAP = {
-    'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz",
+    'bert-base-uncased': "./bert-base-uncased",
     'bert-large-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased.tar.gz",
     'bert-base-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased.tar.gz",
     'bert-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased.tar.gz",
@@ -1705,9 +1705,11 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         # sequence_output=torch.cat([sequence_output,span_sequence_output],2)###2:改成拼接
         # sequence_output=self.ddd(sequence_output)###2:改成拼接
 
+        '''
         #multihead_attn(Q，K，V)--第一种（V = K）：一个注意力att1---11
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,sequence_output)
         pooled_output = self.pooler(attn_output1)
+       
         #第一种对调前两个参数---12
         attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output,span_sequence_output,span_sequence_output)
         pooled_output = self.pooler(attn_output1)
@@ -1715,6 +1717,7 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         #multihead_attn(Q，K，V)---第二种（V = Q）：一个注意力att2---21
         attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,span_sequence_output)
         pooled_output = self.pooler(attn_output2)
+        
         # 第二种对调前两个参数---22
         attn_output2, attn_output_weights2 = self.multihead_attn( sequence_output,span_sequence_output,sequence_output)
         pooled_output = self.pooler(attn_output2)
@@ -1732,7 +1735,7 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
         attn_output=torch.cat([attn_output1,attn_output2],2)
         sequence_output = self.ddd(attn_output)
         pooled_output = self.pooler(sequence_output)
-
+        '''
 
         ###结束变化
         logits = self.classifier(pooled_output)
