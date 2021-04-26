@@ -1701,11 +1701,18 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
 
         span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
         w = F.softmax(self.w)
-        #sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)#原来的做加法
-        # sequence_output=torch.cat([sequence_output,span_sequence_output],2)###2:改成拼接
-        # sequence_output=self.ddd(sequence_output)###2:改成拼接
 
         '''
+        #原来的做加法a
+        sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)
+        pooled_output = self.pooler(sequence_output)
+        
+        #加法改成拼接c
+        sequence_output=torch.cat([sequence_output,span_sequence_output],2)
+        sequence_output=self.ddd(sequence_output)
+        pooled_output = self.pooler(sequence_output)
+
+        
         #multihead_attn(Q，K，V)--第一种（V = K）：一个注意力att1---11
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,sequence_output)
         pooled_output = self.pooler(attn_output1)
