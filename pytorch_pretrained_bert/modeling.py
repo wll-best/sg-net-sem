@@ -38,7 +38,7 @@ import numpy as np###
 logger = logging.getLogger(__name__)
 ##后两个model是新增的
 PRETRAINED_MODEL_ARCHIVE_MAP = {
-    'bert-base-uncased': "./bert-base-uncased",
+    'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz",
     'bert-large-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased.tar.gz",
     'bert-base-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased.tar.gz",
     'bert-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased.tar.gz",
