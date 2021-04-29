@@ -1701,7 +1701,9 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
 
         span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
         w = F.softmax(self.w)
-
+        #原来的做加法a
+        sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)
+        pooled_output = self.pooler(sequence_output)
         '''
         #原来的做加法a
         sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)
