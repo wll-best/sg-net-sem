@@ -581,7 +581,7 @@ def main():
         print('打印num_bestacc:'+str(num_bestacc))
 
     if args.do_eval:
-
+        text_li=[]
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
         #     TrainLoss = pickle.load(f)
 
@@ -589,7 +589,8 @@ def main():
         df = pd.DataFrame(columns=['text', 'label', 'predict_label'])
         eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
         for exa in eval_examples:
-            df['text'].append(exa.text_a)
+            text_li.append(exa.text_a)
+        df['text']=text_li
 
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
