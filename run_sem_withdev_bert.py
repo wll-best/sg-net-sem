@@ -604,8 +604,12 @@ def main():
         text_li, _, _ = rea_sem(args.test_file)  # 为了读文本新增这一行
         # dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
         df = pd.DataFrame(columns=['text', 'label', 'predict_label'])
-        df['text'] = text_li
+        #df['text'] = text_li
         eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
+        print('打印111111')
+        print(eval_examples[1])
+
+        df['text']=eval_examples[1]
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
             tokenizer=tokenizer,
