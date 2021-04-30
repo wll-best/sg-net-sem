@@ -72,24 +72,6 @@ class InputFeatures(object):
         self.label_id = label_id#这里不用减一？？
 
 
-def rea_sem(path):
-    with open(path, 'r', encoding='utf_8') as f:
-        reader = csv.reader(f, delimiter="\t")
-        lines = []
-        text = []
-        y = []
-        gid = []
-        for line in reader:
-            lines.append(line)
-        for (i, line) in enumerate(lines):
-            if i == 0:
-                continue
-            gid.append(i)#这里我把编号从1开始排序
-            text.append(line[0])
-            y.append(int(line[1]))####改成int型
-        return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
-
-
 def read_sem_examples(input_file, is_training):
     with open(input_file, 'r', encoding='utf_8') as f:
         reader = csv.reader(f, delimiter="\t")
@@ -383,7 +365,8 @@ def main():
     torch.manual_seed(args.seed)
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
-    torch.backends.cudnn.deterministic = True###新增，每次返回的卷积算法将是确定的，即默认算法。保证每次运行网络的时候相同输入的输出是固定的
+    torch.backends.cudnn.deterministic = True
+    ###新增，每次返回的卷积算法将是确定的，即默认算法。保证每次运行网络的时候相同输入的输出是固定的
     torch.backends.cudnn.benchmark = False
 
     if not args.do_train and not args.do_eval:
@@ -601,14 +584,10 @@ def main():
 
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
         #     TrainLoss = pickle.load(f)
-        text_li, _, _ = rea_sem(args.test_file)  # 为了读文本新增这一行
+
         # dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
         df = pd.DataFrame(columns=['text', 'label', 'predict_label'])
-        #df['text'] = text_li
         eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
-        print('打印111111')
-        print(eval_examples[1])
-
         df['text']=eval_examples[1]
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
