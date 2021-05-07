@@ -675,13 +675,20 @@ def main():
 
     args.train_batch_size = int(args.train_batch_size / args.gradient_accumulation_steps)
 
+    #为了复现
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    if n_gpu > 0:
-        torch.cuda.manual_seed_all(args.seed)
-    torch.backends.cudnn.deterministic = True###新增，每次返回的卷积算法将是确定的，即默认算法。保证每次运行网络的时候相同输入的输出是固定的
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)  # 为所有GPU设置随机种子
+    torch.backends.cudnn.enabled = False
+    torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(args.seed)  # 为了禁止hash随机化，使得实验可复现。
+    def seed_worker(worker_id):
+        worker_seed = torch.initial_seed() % 2 ** 32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
 
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
@@ -817,8 +824,8 @@ def main():
             train_sampler = DistributedSampler(train_data)
             dev_sampler = DistributedSampler(dev_data)
 
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
-        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.dev_batch_size)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size,worker_init_fn=seed_worker)
+        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.dev_batch_size,worker_init_fn=seed_worker)
 
         TrainLoss = []#新增
         global_step = 0
@@ -981,7 +988,7 @@ def main():
                                   all_example_index)
         eval_sampler = SequentialSampler(eval_data)#和traindata不同的sampler
 
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size,worker_init_fn=seed_worker)
 
         output_eval_file = os.path.join(args.output_dir, "result.txt")
 
