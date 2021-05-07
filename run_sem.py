@@ -602,7 +602,7 @@ def main():
     #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
     #                                                           args.local_rank),
     #                                                       num_labels=5)###要改这个
-    model = BertForMultipleChoiceSpanMask2.from_pretrained(args.bert_model,
+    model = BertForSemSpanMask.from_pretrained(args.bert_model,
                                                           cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
                                                               args.local_rank),
                                                           num_choices=5)###要改这个
@@ -799,7 +799,7 @@ def main():
             model_state_dict = torch.load(output_model_file)
             # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
             #                                                       num_labels=5)###改
-            model = BertForMultipleChoiceSpanMask2.from_pretrained(args.bert_model, state_dict=model_state_dict,
+            model = BertForSemSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
                                                                   num_choices=5)
             model.to(device)
             logger.info("Start evaluating")

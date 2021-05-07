@@ -1611,7 +1611,7 @@ class BertForSequenceClassificationSpanMask(BertPreTrainedModel):
 
 
 #改进
-class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
+class BertForSemSpanMask(BertPreTrainedModel):
     """BERT model for multiple choice tasks.
     This module is composed of the BERT model with a linear layer on top of
     the pooled output.
@@ -1657,7 +1657,7 @@ class BertForMultipleChoiceSpanMask2(BertPreTrainedModel):
     """
 
     def __init__(self, config, num_choices):
-        super(BertForMultipleChoiceSpanMask2, self).__init__(config)
+        super(BertForSemSpanMask, self).__init__(config)
         self.num_choices = num_choices
         self.bert = BertModel(config)
         self.pooler = BertPooler(config)###
