@@ -810,7 +810,9 @@ def main():
 
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
-            dev_sampler = RandomSampler(dev_data)
+            dev_sampler = SequentialSampler(dev_data)
+            #在训练的时候，我们使用的是RandomSampler采样器，在验证或者测试的时候，我们使用的是SequentialSampler采样器。
+            # 训练的时候是打乱数据再进行读取，验证的时候顺序读取数据
         else:
             train_sampler = DistributedSampler(train_data)
             dev_sampler = DistributedSampler(dev_data)

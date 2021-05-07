@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """BERT finetuning runner."""
-#测试baseline-----原始的bert
+#不用pytorch_pretrained_bert，改用transformers包
 from __future__ import absolute_import, division, print_function
 
 #我的
@@ -36,11 +36,17 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 
-
+'''
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import *
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam
+'''
+
+from transformers import BertForSequenceClassification, AdamW
+from transformers import BertTokenizer
+from transformers import get_linear_schedule_with_warmup
+
 from sklearn import metrics
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -70,6 +76,24 @@ class InputFeatures(object):
         self.input_mask = input_mask
         self.segment_ids = segment_ids
         self.label_id = label_id#这里不用减一？？
+
+
+def rea_sem(path):
+    with open(path, 'r', encoding='utf_8') as f:
+        reader = csv.reader(f, delimiter="\t")
+        lines = []
+        text = []
+        y = []
+        gid = []
+        for line in reader:
+            lines.append(line)
+        for (i, line) in enumerate(lines):
+            if i == 0:
+                continue
+            gid.append(i)#这里我把编号从1开始排序
+            text.append(line[0])
+            y.append(int(line[1]))####改成int型
+        return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
 
 
 def read_sem_examples(input_file, is_training):
@@ -365,10 +389,8 @@ def main():
     torch.manual_seed(args.seed)
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
-    torch.backends.cudnn.deterministic = True
-    ###新增，每次返回的卷积算法将是确定的，即默认算法。保证每次运行网络的时候相同输入的输出是固定的
+    torch.backends.cudnn.deterministic = True###新增，每次返回的卷积算法将是确定的，即默认算法。保证每次运行网络的时候相同输入的输出是固定的
     torch.backends.cudnn.benchmark = False
-
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
@@ -378,10 +400,8 @@ def main():
     #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
     #                                                           args.local_rank),
     #                                                       num_labels=5)###要改这个
-    model = BertForSequenceClassification.from_pretrained(args.bert_model,
-                                                          cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
-                                                              args.local_rank),
-                                                          num_labels=5)###要改这个
+    model = BertForSequenceClassification.from_pretrained(args.bert_model,num_labels=5,
+                                                          output_attentions=False, output_hidden_states=False)###要改这个
     train_examples = None
     num_train_steps = None
 
@@ -439,11 +459,13 @@ def main():
         else:
             optimizer = FP16_Optimizer(optimizer, static_loss_scale=args.loss_scale)
     else:
-        optimizer = BertAdam(optimizer_grouped_parameters,
-                             lr=args.learning_rate,
-                             warmup=args.warmup_proportion,
-                             t_total=t_total)
 
+        optimizer = AdamW(optimizer_grouped_parameters,lr=args.learning_rate)#这里没有warmup和t_total会出什么问题？？？？
+        '''
+        #BertAdam改成AdamW----------
+                             warmup=args.warmup_proportion,
+                             t_total=t_total)        
+        '''
 
     if args.do_train:
 
@@ -492,15 +514,17 @@ def main():
 
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
-            dev_sampler = SequentialSampler(dev_data)
-            #在训练的时候，我们使用的是RandomSampler采样器，在验证或者测试的时候，我们使用的是SequentialSampler采样器。
-            # 训练的时候是打乱数据再进行读取，验证的时候顺序读取数据
+            dev_sampler = RandomSampler(dev_data)
         else:
             train_sampler = DistributedSampler(train_data)
             dev_sampler = DistributedSampler(dev_data)
 
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
         dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.dev_batch_size)
+
+        #记录学习率的
+        total_steps = len(train_dataloader) * args.num_train_epochs
+        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
         TrainLoss = []#新增
         global_step = 0
@@ -524,7 +548,7 @@ def main():
                 batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids = batch
                 #新增结束---
-                loss = model(input_ids, segment_ids, input_mask, label_ids)
+                loss, logits = model(input_ids, segment_ids, input_mask, label_ids)
                 if n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.fp16 and args.loss_scale != 1.0:
@@ -551,6 +575,7 @@ def main():
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = lr_this_step
                     optimizer.step()
+                    scheduler.step()###
                     optimizer.zero_grad()
                     global_step += 1
 
@@ -583,17 +608,17 @@ def main():
         print('打印num_bestacc:'+str(num_bestacc))
 
     if args.do_eval:
-        text_li=[]
+
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
         #     TrainLoss = pickle.load(f)
+        #text_li, _, _ = rea_sem(args.test_file)  # 为了读文本新增这一行
 
         # dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
         df = pd.DataFrame(columns=['text', 'label', 'predict_label'])
-        eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
-        for exa in eval_examples:
-            text_li.append(exa.text_a)
-        df['text']=text_li
+        #df['text'] = text_li
 
+        eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
+        df['text'] =eval_examples[1]
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
             tokenizer=tokenizer,
