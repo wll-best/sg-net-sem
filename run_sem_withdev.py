@@ -600,7 +600,7 @@ def main():
                         default=50,
                         type=int,
                         help="多少步进行模型保存以及日志信息写入")
-    parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev loss 连续增大，就不再训练")
+    parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev acc 不再连续增大，就不再训练")
     parser.add_argument("--log_dir",
                         default="log_dir",
                         type=str,
