@@ -124,7 +124,17 @@ def ntest_label_split(bdf_14,bdf_15,bdf_16,ntest):
         print('15正确的数目' + str(rightnum15) + ',  15总数目' + str(len(row15)) + ',  15的准确率：' + str(acc15)+',  15的macro_f1：' + str(macro_f1_15))
         print('16正确的数目' + str(rightnum16) + ',  16总数目' + str(len(row16)) + ',  16的准确率：' + str(acc16)+',  16的macro_f1：' + str(macro_f1_16))
 
-
+'''
+数据集说明：
+#没打乱顺序
+train/test/dev.tsv-->$T$
+train_t/test_t/dev_t.tsv-->T
+sem_t是所有数据，顺序排列
+#打乱顺序按照6：2：2划分
+ntrain/ntest/ndev.tsv-->T
+ntest_label-->T,模型生成的测试集结果
+ntrainss,ntestss-->T,将前面的训练集与验证集整合成现在的训练集，测试集不变
+'''
 
 if __name__ == "__main__":
     # chgt('test.tsv','test_t.tsv')

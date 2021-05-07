@@ -47,6 +47,9 @@ from transformers import BertForSequenceClassification, AdamW
 from transformers import BertTokenizer
 from transformers import get_linear_schedule_with_warmup
 
+from transformers import AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AdamW
+
 from sklearn import metrics
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',

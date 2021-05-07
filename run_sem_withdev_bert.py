@@ -511,6 +511,7 @@ def main():
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
+                print('early_stop......')
                 break
 
             #tr_loss = 0
