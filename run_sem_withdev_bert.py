@@ -69,7 +69,7 @@ class InputFeatures(object):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
-        self.label_id = label_id#这里不用减一？？
+        self.label_id = label_id-1
 
 
 def read_sem_examples(input_file, is_training):
@@ -96,7 +96,7 @@ def read_sem_examples(input_file, is_training):
     return examples
 
 
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):#
+def convert_examples_to_features(examples, max_seq_length, tokenizer):#不增label_list
     """Loads a data file into a list of `InputBatch`s."""
     # The convention in BERT is:
     # (a) For sequence pairs:
@@ -117,8 +117,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     # used as as the "sentence vector". Note that this only makes sense because
     # the entire model is fine-tuned.
 
-    #label_map = {label : i for i, label in enumerate(label_list)}#要不要？
-    label_map = {label : i for i, label in enumerate(label_list)}
+
+    #label_map = {label : i for i, label in enumerate(label_list)}
 
     features = []
     for (ex_index, example) in enumerate(tqdm(examples, ncols=50, desc="converting...")):
@@ -157,7 +157,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         assert len(input_ids) == max_seq_length
         assert len(input_mask) == max_seq_length
         assert len(segment_ids) == max_seq_length
-        label_id=label_map[example.label]
+        #label_id=label_map[example.label]
+        label_id = example.label
         features.append(
             InputFeatures(input_ids=input_ids,
                           input_mask=input_mask,
@@ -182,10 +183,6 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
         else:
             tokens_b.pop()
 
-#一样
-def accuracy(out, labels):
-    outputs = np.argmax(out, axis=1)#当axis=1，是在行中比较，选出最大的 列 索引
-    return np.sum(outputs == labels)
 
 #一样
 def warmup_linear(x, warmup=0.002):
@@ -193,33 +190,40 @@ def warmup_linear(x, warmup=0.002):
         return x / warmup
     return 1.0 - x
 
-def evaluate(model, dataloader,dev_features,device):
+def classifiction_metric(preds, labels, label_list):
+    """ 分类任务的评价指标， 传入的数据需要是 numpy 类型的 """
 
+    acc = metrics.accuracy_score(labels, preds)
+
+    labels_list = [i for i in range(len(label_list))]
+    #多分类：micro - F1 = micro - precision = micro - recall = accuracy
+    report = metrics.classification_report(labels, preds, labels=labels_list, target_names=label_list, digits=5, output_dict=True)
+    #digits：int，输出浮点值的位数．
+
+    return acc, report
+
+def evaluate(model, dataloader, device, label_list):
     model.eval()
-
-    eval_loss, eval_accuracy = 0, 0
-    nb_eval_steps, nb_eval_examples = 0, 0
+    all_preds = np.array([], dtype=int)
+    all_labels = np.array([], dtype=int)
 
     for input_ids, input_mask, segment_ids, label_ids in dataloader:
         input_ids = input_ids.to(device)
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
+
         with torch.no_grad():
+            logits = model(input_ids, segment_ids, input_mask, labels=None)
+        preds = logits.detach().cpu().numpy()
+        outputs = np.argmax(preds, axis=1)
+        all_preds = np.append(all_preds, outputs)
 
-            logits = model(input_ids, segment_ids, input_mask)
-
-        logits = logits.detach().cpu().numpy()
         label_ids = label_ids.to('cpu').numpy()
-        tmp_eval_accuracy = accuracy(logits, label_ids)
+        all_labels = np.append(all_labels, label_ids)
 
-        eval_accuracy += tmp_eval_accuracy
-
-        nb_eval_examples += input_ids.size(0)
-        nb_eval_steps += 1
-
-    eval_accuracy = eval_accuracy / nb_eval_examples
-    return eval_accuracy
+    acc, report = classifiction_metric(all_preds, all_labels, label_list)
+    return acc, report, all_preds, all_labels
 
 def main():
     parser = argparse.ArgumentParser()
@@ -327,10 +331,10 @@ def main():
                         help="多少步进行模型保存以及日志信息写入")
     parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev acc 不再连续增大，就不再训练")
 
-    # parser.add_argument("--label_list",
-    #                     default=["1", "2", "3", "4", "5"],
-    #                     type=list,
-    #                     help="我自己加的类别标签")#不知道有没有用
+    parser.add_argument("--label_list",
+                        default=["0", "1", "2", "3", "4"],
+                        type=list,
+                        help="我自己加的类别标签")
 
 
     args = parser.parse_args()
@@ -360,24 +364,26 @@ def main():
 
     args.train_batch_size = int(args.train_batch_size / args.gradient_accumulation_steps)
 
+    #为了复现
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    if n_gpu > 0:
-        torch.cuda.manual_seed_all(args.seed)
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)  # 为所有GPU设置随机种子
+    torch.backends.cudnn.enabled = False
     torch.backends.cudnn.deterministic = True
-    ###新增，每次返回的卷积算法将是确定的，即默认算法。保证每次运行网络的时候相同输入的输出是固定的
     torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(args.seed)  # 为了禁止hash随机化，使得实验可复现。
+    def seed_worker(worker_id):
+        worker_seed = torch.initial_seed() % 2 ** 32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
 
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
-    label_list=["1", "2", "3", "4", "5"]
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
-    # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model,
-    #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
-    #                                                           args.local_rank),
-    #                                                       num_labels=5)###要改这个
+
     model = BertForSequenceClassification.from_pretrained(args.bert_model,
                                                           cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
                                                               args.local_rank),
@@ -446,19 +452,16 @@ def main():
 
 
     if args.do_train:
-
         train_features = convert_examples_to_features(
             examples=train_examples,
             tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length,
-            label_list=label_list
+            max_seq_length=args.max_seq_length
         )
         #增加dev_dataloader
         dev_features = convert_examples_to_features(
             examples=dev_examples,
             tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length,
-            label_list = label_list
+            max_seq_length=args.max_seq_length
         )
 
         logger.info("***** Running training *****bert-sem")
@@ -499,8 +502,8 @@ def main():
             train_sampler = DistributedSampler(train_data)
             dev_sampler = DistributedSampler(dev_data)
 
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
-        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.dev_batch_size)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size,worker_init_fn=seed_worker)
+        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.dev_batch_size,worker_init_fn=seed_worker)
 
         TrainLoss = []#新增
         global_step = 0
@@ -559,7 +562,7 @@ def main():
                     if global_step % args.print_step == 0 and global_step != 0:
                         num_model += 1
                         train_loss = epoch_loss / train_steps
-                        dev_acc = evaluate(model, dev_dataloader, dev_features,device)
+                        dev_acc,_,_,_ = evaluate(model, dev_dataloader, device, args.label_list)
                         # 以 acc 取优
                         if dev_acc > best_acc:
                             num_bestacc += 1
@@ -598,10 +601,8 @@ def main():
         total_eval_features = convert_examples_to_features(
             examples=eval_examples,
             tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length,
-            label_list=label_list
+            max_seq_length=args.max_seq_length
         )
-            ##label_list=args.label_list)  # label_list要不要呢？先加上吧
 
         eval_features = total_eval_features
         logger.info("***** Running evaluation *****bert-sem")
@@ -616,7 +617,7 @@ def main():
 
         eval_sampler = SequentialSampler(eval_data)#和traindata不同的sampler
 
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size,worker_init_fn=seed_worker)
 
         output_eval_file = os.path.join(args.output_dir, "result.txt")
 
@@ -633,6 +634,7 @@ def main():
 
         print("=======================")
         print("test_total...")
+        '''        
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
@@ -669,8 +671,15 @@ def main():
         macro_f1 = metrics.f1_score(sum(predict_label_li,[]),sum(label_li,[]),labels=[0,1,2,3,4], average='macro')
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
+        '''
+        eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, eval_dataloader, device, args.label_list)
 
-        result = {'eval_accuracy': eval_accuracy,'macro_f1':macro_f1}
+        df['predict_label'] = all_preds
+        df['label'] = all_labels
+        df.to_csv("ntest_bert_label.tsv", sep='\t')
+
+        eval_macro_f1 = eval_report['macro avg']['f1-score']
+        result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}
 
         with open(output_eval_file, "a") as writer:
             logger.info("***** Eval results *****")

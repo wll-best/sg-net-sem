@@ -134,29 +134,12 @@ def rea_sem(path):
             y.append(int(line[1]))####改成int型
         return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
 
-###新增
-class SimpleNlp(object):
-    def __init__(self):#这得改，要用spacy打标签----------
-        self.nlp = spacy.load('en', disable=['parser', 'tagger', 'ner', 'textcat'])
-        self.nlp.add_pipe(self.nlp.create_pipe('sentencizer'))
-        # self.nlp = nltk.data.load('tokenizers/punkt/english.pickle').tokenize
-
-    def nlp(self, text):
-        return self.nlp(text)
-
-###新增
-def is_whitespace(c):
-    if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
-        return True
-    return False
-
 
 def read_sem_examples(input_file, input_tag_file, is_training):
     text, y, gid = rea_sem(input_file)
 
     input_tag_data = []
 
-    #simple_nlp = SimpleNlp()
     with open(input_tag_file, "r", encoding='utf-8') as reader:
         for line in reader:
             input_tag_data.append(json.loads(line))
@@ -348,34 +331,6 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length):#, label_l
     return features
 
 
-def _truncate_seq_pair(tokens_a, tokens_b, max_length):
-    """Truncates a sequence pair in place to the maximum length."""
-
-    # This is a simple heuristic which will always truncate the longer sequence
-    # one token at a time. This makes more sense than truncating an equal percent
-    # of tokens from each, since if one sequence is very short then each token
-    # that's truncated likely contains more information than a longer sequence.
-    idx_a = list(range(len(tokens_a)))#新增
-    idx_b = list(range(len(tokens_b)))#新增
-    while True:
-
-        total_length = len(tokens_a) + len(tokens_b)
-        if total_length <= max_length:
-            break
-        if len(tokens_a) > len(tokens_b):
-            tokens_a.pop(0)
-            idx_a.pop(0)
-        else:
-            tokens_b.pop(0)
-            idx_b.pop(0)
-
-    return idx_a[0], idx_b[0]
-
-#一样
-def accuracy(out, labels):
-    outputs = np.argmax(out, axis=1)#当axis=1，是在行中比较，选出最大的 列 索引
-    return np.sum(outputs == labels)
-
 #新增
 def select_field(features, field):
     return [
@@ -386,42 +341,6 @@ def select_field(features, field):
         for feature in features
     ]
 
-#一样
-def warmup_linear(x, warmup=0.002):
-    if x < warmup:
-        return x / warmup
-    return 1.0 - x
-
-####新增
-def copy_optimizer_params_to_model(named_params_model, named_params_optimizer):
-    """ Utility function for optimize_on_cpu and 16-bits training.
-        Copy the parameters optimized on CPU/RAM back to the model on GPU
-    """
-    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer, named_params_model):
-        if name_opti != name_model:
-            logger.error("name_opti != name_model: {} {}".format(name_opti, name_model))
-            raise ValueError
-        param_model.data.copy_(param_opti.data)
-
-####新增
-def set_optimizer_params_grad(named_params_optimizer, named_params_model, test_nan=False):
-    """ Utility function for optimize_on_cpu and 16-bits training.
-        Copy the gradient of the GPU parameters to the CPU/RAMM copy of the model
-    """
-    is_nan = False
-    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer, named_params_model):
-        if name_opti != name_model:
-            logger.error("name_opti != name_model: {} {}".format(name_opti, name_model))
-            raise ValueError
-        if param_model.grad is not None:
-            if test_nan and torch.isnan(param_model.grad).sum() > 0:
-                is_nan = True
-            if param_opti.grad is None:
-                param_opti.grad = torch.nn.Parameter(param_opti.data.new().resize_(*param_opti.data.size()))
-            param_opti.grad.data.copy_(param_model.grad.data)
-        else:
-            param_opti.grad = None
-    return is_nan
 
 def classifiction_metric(preds, labels, label_list):
     """ 分类任务的评价指标， 传入的数据需要是 numpy 类型的 """
@@ -429,20 +348,18 @@ def classifiction_metric(preds, labels, label_list):
     acc = metrics.accuracy_score(labels, preds)
 
     labels_list = [i for i in range(len(label_list))]
-    #多标签分类：micro - F1 = micro - precision = micro - recall = accuracy
+    #多分类：micro - F1 = micro - precision = micro - recall = accuracy
     report = metrics.classification_report(labels, preds, labels=labels_list, target_names=label_list, digits=5, output_dict=True)
     #digits：int，输出浮点值的位数．
 
     return acc, report
 
-def evaluate(model, dataloader, criterion, device, label_list,dev_features):#增加dev_features
+def evaluate(model, dataloader, criterion, device, label_list,features):#增加features
 
     model.eval()
     all_preds = np.array([], dtype=int)
     all_labels = np.array([], dtype=int)
     epoch_loss = 0
-    eval_loss, eval_accuracy = 0, 0
-    nb_eval_steps, nb_eval_examples = 0, 0
 
     for input_ids, input_mask, segment_ids, label_ids, example_index in dataloader:
         input_ids = input_ids.to(device)
@@ -452,8 +369,8 @@ def evaluate(model, dataloader, criterion, device, label_list,dev_features):#增
         # 新增开始,和do_train部分一样
         input_span_mask = np.zeros((input_ids.size(0), input_ids.size(1), input_ids.size(2), input_ids.size(2)))
         for batch_idx, ex_idx in enumerate(example_index):
-            dev_feature = dev_features[ex_idx.item()]
-            choice_features = dev_feature.choices_features
+            feature = features[ex_idx.item()]
+            choice_features = feature.choices_features
             for idx, choice_fea in enumerate(choice_features):
                 span_mask = choice_fea["input_span_mask"]
                 for i, i_mask in enumerate(span_mask):
@@ -475,17 +392,7 @@ def evaluate(model, dataloader, criterion, device, label_list,dev_features):#增
 
     acc, report = classifiction_metric(all_preds, all_labels, label_list)
     return epoch_loss/len(dataloader), acc, report, all_preds, all_labels
-    #     logits = logits.detach().cpu().numpy()
-    #     label_ids = label_ids.to('cpu').numpy()
-    #     tmp_eval_accuracy = accuracy(logits, label_ids)
-    #
-    #     eval_accuracy += tmp_eval_accuracy
-    #
-    #     nb_eval_examples += input_ids.size(0)
-    #     nb_eval_steps += 1
-    #
-    # eval_accuracy = eval_accuracy / nb_eval_examples
-    # return eval_accuracy
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -606,9 +513,9 @@ def main():
                         type=str,
                         help="日志目录，主要用于 tensorboard 分析")
     parser.add_argument("--label_list",
-                        default=["0","1", "2", "3", "4"],
+                        default=["0", "1", "2", "3", "4"],
                         type=list,
-                        help="我自己加的类别标签")#不知道有没有用
+                        help="我自己加的类别标签")
 
     ## 没用参数
     '''
@@ -1060,10 +967,12 @@ def main():
 '''
 
         _, eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, eval_dataloader, criterion, device, args.label_list,eval_features)
-        eval_macro_f1=eval_report['macro avg']['f1-score']
+
         df['predict_label'] = all_preds
         df['label'] = all_labels
         df.to_csv("ntest_sg_label.tsv", sep='\t')
+
+        eval_macro_f1 = eval_report['macro avg']['f1-score']
         result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}
 
         with open(output_eval_file, "a") as writer:
