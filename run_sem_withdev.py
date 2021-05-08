@@ -516,43 +516,10 @@ def main():
                         default=["0", "1", "2", "3", "4"],
                         type=list,
                         help="我自己加的类别标签")
+    parser.add_argument("--predict_test_file",
+                        default='ntest_sg_label.tsv',
+                        type=str)
 
-    ## 没用参数
-    '''
-    parser.add_argument("--data_dir",
-                        type=str,
-                        help="The input data dir. Should contain the .csv files (or other data files) for the task.")    
-    parser.add_argument("--model_name",
-                        default='output_batch4_fp16.bin',
-                        type=str,
-                        help="The output directory where the model checkpoints will be written.")
-    parser.add_argument("--dev_file",
-                        default='dev.json',
-                        type=str)
-    parser.add_argument("--dev_tag_file",
-                        default='output_sem_dev.json',
-                        type=str)
-    parser.add_argument("--sa_file",#这是什么
-                        default='sample_nsp_train_dev.json',
-                        type=str)
-    parser.add_argument("--test_middle",
-                        default='testmiddle.json',
-                        type=str)
-    parser.add_argument("--test_high",
-                        default='testhigh.json',
-                        type=str)
-    parser.add_argument("--mid_high",
-                        default=True,
-                        help="Whether to run training.")
-    parser.add_argument("--do_sa",#这是什么
-                        default=False,
-                        action='store_true',
-                        help="Whether to run training.")
-    parser.add_argument("--load_ft",#这是什么
-                        default=False,
-                        action='store_true',
-                        help="Set this flag if you are using an uncased model.")
-    '''
 
     args = parser.parse_args()
     logger.info(args)
@@ -970,7 +937,8 @@ def main():
 
         df['predict_label'] = all_preds
         df['label'] = all_labels
-        df.to_csv("ntest_sg_label.tsv", sep='\t')
+        ntest_sg_label = os.path.join(args.output_dir, args.predict_test_file)
+        df.to_csv(ntest_sg_label, sep='\t')
 
         eval_macro_f1 = eval_report['macro avg']['f1-score']
         result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}

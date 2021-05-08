@@ -89,7 +89,7 @@ def read_sem_examples(input_file, is_training):
         if i == 0:
             continue
         text_a = line[0]
-        label = line[1]
+        label = int(line[1])
         examples.append(
             InputExample(guid=i, text_a=text_a, text_b=None, label=label))
 
@@ -335,7 +335,9 @@ def main():
                         default=["0", "1", "2", "3", "4"],
                         type=list,
                         help="我自己加的类别标签")
-
+    parser.add_argument("--predict_test_file",
+                        default='ntest_sg_label.tsv',
+                        type=str)
 
     args = parser.parse_args()
     logger.info(args)
@@ -676,7 +678,8 @@ def main():
 
         df['predict_label'] = all_preds
         df['label'] = all_labels
-        df.to_csv("ntest_bert_label.tsv", sep='\t')
+        ntest_sg_label = os.path.join(args.output_dir, args.predict_test_file)
+        df.to_csv(ntest_sg_label, sep='\t')
 
         eval_macro_f1 = eval_report['macro avg']['f1-score']
         result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}
