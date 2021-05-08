@@ -474,7 +474,7 @@ def evaluate(model, dataloader, criterion, device, label_list,dev_features):#增
         epoch_loss += loss.mean().item()
 
     acc, report = classifiction_metric(all_preds, all_labels, label_list)
-    return epoch_loss/len(dataloader), acc, report, all_preds, all_labels
+    return epoch_loss/len(dataloader), acc, report
     #     logits = logits.detach().cpu().numpy()
     #     label_ids = label_ids.to('cpu').numpy()
     #     tmp_eval_accuracy = accuracy(logits, label_ids)
@@ -766,11 +766,10 @@ def main():
                              warmup=args.warmup_proportion,
                              t_total=t_total)
 
-    criterion = nn.CrossEntropyLoss()
-    criterion = criterion.to(device)
 
     if args.do_train:
-
+        criterion = nn.CrossEntropyLoss()
+        criterion = criterion.to(device)
         train_features = convert_examples_to_features(
             examples=train_examples,
             tokenizer=tokenizer,
@@ -913,7 +912,7 @@ def main():
                         """ 打印Train此时的信息 """
                         train_loss = epoch_loss / train_steps
                         train_acc, train_report = classifiction_metric(all_preds, all_labels, args.label_list)
-                        dev_loss, dev_acc, dev_report, _ , _ = evaluate(model, dev_dataloader, criterion, device, args.label_list, dev_features)
+                        dev_loss, dev_acc, dev_report = evaluate(model, dev_dataloader, criterion, device, args.label_list, dev_features)
 
                         c = global_step // args.print_step
                         writer.add_scalar("loss/train", train_loss, c)
@@ -973,7 +972,7 @@ def main():
             tokenizer=tokenizer,
             max_seq_length=args.max_seq_length
         )
-            ##label_list=args.label_list)  # label_list要不要呢？
+            ##label_list=args.label_list)  # label_list要不要呢？先加上吧
 
         eval_features = total_eval_features
         logger.info("***** Running evaluation *****sg-net-sem")
@@ -1007,7 +1006,6 @@ def main():
 
         print("=======================")
         print("test_total...")
-        '''
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
@@ -1057,14 +1055,8 @@ def main():
         macro_f1 = metrics.f1_score(sum(predict_label_li,[]),sum(label_li,[]),labels=[0,1,2,3,4], average='macro')
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
-'''
 
-        _, eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, eval_dataloader, criterion, device, args.label_list,eval_features)
-        eval_macro_f1=eval_report['macro avg']['f1-score']
-        df['predict_label'] = all_preds
-        df['label'] = all_labels
-        df.to_csv("ntest_sg_label.tsv", sep='\t')
-        result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}
+        result = {'eval_accuracy': eval_accuracy,'macro_f1':macro_f1}
 
         with open(output_eval_file, "a") as writer:
             logger.info("***** Eval results *****")
