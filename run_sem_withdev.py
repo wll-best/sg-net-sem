@@ -721,7 +721,8 @@ def main():
             epoch_loss = 0
             all_preds = np.array([], dtype=int)
             all_labels = np.array([], dtype=int)
-            nb_tr_examples, train_steps = 0, 0
+            #nb_tr_examples=0
+            train_steps = 0
 
             for step, batch in enumerate(tqdm(train_dataloader, ncols=50, desc="Iteration")):#新增ncols，进度条长度。默认是10
 

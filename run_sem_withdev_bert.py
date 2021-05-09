@@ -520,8 +520,8 @@ def main():
                 break
 
             #tr_loss = 0
-            epoch_loss = 0
-            nb_tr_examples, train_steps = 0, 0
+            # epoch_loss = 0
+            # nb_tr_examples, train_steps = 0, 0
 
             for step, batch in enumerate(tqdm(train_dataloader, ncols=50, desc="Iteration")):#新增ncols，进度条长度。默认是10
 
@@ -542,14 +542,14 @@ def main():
                 # tr_loss += loss.item()#epoch_loss
                 # nb_tr_examples += input_ids.size(0)#没用
 
-                train_steps += 1
+                #train_steps += 1
 
                 if args.fp16:
                     optimizer.backward(loss)
                 else:
                     loss.backward()
 
-                epoch_loss += loss.item()
+                #epoch_loss += loss.item()
 
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
@@ -563,7 +563,7 @@ def main():
                     #新增dev数据集调参
                     if global_step % args.print_step == 0 and global_step != 0:
                         num_model += 1
-                        train_loss = epoch_loss / train_steps
+                        #train_loss = epoch_loss / train_steps
                         dev_acc,_,_,_ = evaluate(model, dev_dataloader, device, args.label_list)
                         # 以 acc 取优
                         if dev_acc > best_acc:

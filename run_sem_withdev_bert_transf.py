@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """BERT finetuning runner."""
-#不用pytorch_pretrained_bert，改用transformers包
+#测试baseline-----原始的bert
 from __future__ import absolute_import, division, print_function
 
 #我的
@@ -43,12 +43,9 @@ from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam
 '''
 
-from transformers import BertForSequenceClassification, AdamW
-from transformers import BertTokenizer
-from transformers import get_linear_schedule_with_warmup
-
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification, AdamW
+from transformers import get_linear_schedule_with_warmup
 
 from sklearn import metrics
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -56,7 +53,7 @@ logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(messa
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-
+'''
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
 
@@ -70,7 +67,6 @@ class InputExample(object):
         self.text_b = text_b
         self.label = label
 
-
 class InputFeatures(object):
     """A single set of features of data."""
 
@@ -78,26 +74,7 @@ class InputFeatures(object):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
-        self.label_id = label_id#这里不用减一？？
-
-
-def rea_sem(path):
-    with open(path, 'r', encoding='utf_8') as f:
-        reader = csv.reader(f, delimiter="\t")
-        lines = []
-        text = []
-        y = []
-        gid = []
-        for line in reader:
-            lines.append(line)
-        for (i, line) in enumerate(lines):
-            if i == 0:
-                continue
-            gid.append(i)#这里我把编号从1开始排序
-            text.append(line[0])
-            y.append(int(line[1]))####改成int型
-        return  text, y, gid#返回三个数组：句子数组，标签数组，编号数组
-
+        self.label_id = label_id-1
 
 def read_sem_examples(input_file, is_training):
     with open(input_file, 'r', encoding='utf_8') as f:
@@ -116,14 +93,13 @@ def read_sem_examples(input_file, is_training):
         if i == 0:
             continue
         text_a = line[0]
-        label = line[1]
+        label = int(line[1])
         examples.append(
             InputExample(guid=i, text_a=text_a, text_b=None, label=label))
 
     return examples
 
-
-def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):#
+def convert_examples_to_features(examples, max_seq_length, tokenizer):#不增label_list
     """Loads a data file into a list of `InputBatch`s."""
     # The convention in BERT is:
     # (a) For sequence pairs:
@@ -144,8 +120,8 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     # used as as the "sentence vector". Note that this only makes sense because
     # the entire model is fine-tuned.
 
-    #label_map = {label : i for i, label in enumerate(label_list)}#要不要？
-    label_map = {label : i for i, label in enumerate(label_list)}
+
+    #label_map = {label : i for i, label in enumerate(label_list)}
 
     features = []
     for (ex_index, example) in enumerate(tqdm(examples, ncols=50, desc="converting...")):
@@ -184,14 +160,14 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         assert len(input_ids) == max_seq_length
         assert len(input_mask) == max_seq_length
         assert len(segment_ids) == max_seq_length
-        label_id=label_map[example.label]
+        #label_id=label_map[example.label]
+        label_id = example.label
         features.append(
             InputFeatures(input_ids=input_ids,
                           input_mask=input_mask,
                           segment_ids=segment_ids,
                           label_id=label_id))
     return features
-
 
 def _truncate_seq_pair(tokens_a, tokens_b, max_length):
     """Truncates a sequence pair in place to the maximum length."""
@@ -209,52 +185,59 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
         else:
             tokens_b.pop()
 
-#一样
-def accuracy(out, labels):
-    outputs = np.argmax(out, axis=1)#当axis=1，是在行中比较，选出最大的 列 索引
-    return np.sum(outputs == labels)
-
-#一样
 def warmup_linear(x, warmup=0.002):
     if x < warmup:
         return x / warmup
     return 1.0 - x
+'''
 
-def evaluate(model, dataloader,dev_features,device):
+def classifiction_metric(preds, labels, label_list):
+    """ 分类任务的评价指标， 传入的数据需要是 numpy 类型的 """
 
+    acc = metrics.accuracy_score(labels, preds)
+
+    labels_list = [i for i in range(len(label_list))]
+    #多分类：micro - F1 = micro - precision = micro - recall = accuracy
+    report = metrics.classification_report(labels, preds, labels=labels_list, target_names=label_list, digits=5, output_dict=True)
+    #digits：int，输出浮点值的位数．
+
+    return acc, report
+
+def evaluate(model, dataloader, device, label_list):
     model.eval()
+    all_preds = np.array([], dtype=int)
+    all_labels = np.array([], dtype=int)
 
-    eval_loss, eval_accuracy = 0, 0
-    nb_eval_steps, nb_eval_examples = 0, 0
-
-    for input_ids, input_mask, segment_ids, label_ids in dataloader:
-        input_ids = input_ids.to(device)
-        input_mask = input_mask.to(device)
-        segment_ids = segment_ids.to(device)
-        label_ids = label_ids.to(device)
+    for batch in dataloader:
         with torch.no_grad():
+            out2 = model(batch[0].to(device), token_type_ids=None, attention_mask=(batch[0] > 0).to(device),
+                     labels=batch[1].to(device))
+        loss, logits = out2[:2]
+        preds = logits.detach().cpu().numpy()
+        outputs = np.argmax(preds, axis=1)
+        all_preds = np.append(all_preds, outputs)
 
-            logits = model(input_ids, segment_ids, input_mask)
+        label_ids = batch[1].to('cpu').numpy()
+        all_labels = np.append(all_labels, label_ids)
 
-        logits = logits.detach().cpu().numpy()
-        label_ids = label_ids.to('cpu').numpy()
-        tmp_eval_accuracy = accuracy(logits, label_ids)
+    acc, report = classifiction_metric(all_preds, all_labels, label_list)
+    return acc, report, all_preds, all_labels
 
-        eval_accuracy += tmp_eval_accuracy
 
-        nb_eval_examples += input_ids.size(0)
-        nb_eval_steps += 1
+from sklearn.metrics import f1_score, accuracy_score
+def flat_accuracy(preds, labels):
+    """A function for calculating accuracy scores"""
 
-    eval_accuracy = eval_accuracy / nb_eval_examples
-    return eval_accuracy
+    pred_flat = np.argmax(preds, axis=1).flatten()
+    labels_flat = labels.flatten()
+    return accuracy_score(labels_flat, pred_flat)
 
 def main():
     parser = argparse.ArgumentParser()
 
     ## 有用参数
     parser.add_argument("--bert_model", default='bert-base-cased', type=str,
-                        help="Bert pre-trained model selected in the list: bert-base-uncased, "
-                             "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.")
+                        help="transformers中的模型都可: bert-base-uncased, roberta-base.")
     parser.add_argument("--output_dir",
                         default='output',
                         type=str,
@@ -352,13 +335,15 @@ def main():
                         default=50,
                         type=int,
                         help="多少步进行模型保存以及日志信息写入")
-    parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev loss 连续增大，就不再训练")
+    parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev acc 不再连续增大，就不再训练")
 
-    # parser.add_argument("--label_list",
-    #                     default=["1", "2", "3", "4", "5"],
-    #                     type=list,
-    #                     help="我自己加的类别标签")#不知道有没有用
-
+    parser.add_argument("--label_list",
+                        default=["0", "1", "2", "3", "4"],
+                        type=list,
+                        help="我自己加的类别标签")
+    parser.add_argument("--predict_test_file",
+                        default='ntest_sg_label.tsv',
+                        type=str)
 
     args = parser.parse_args()
     logger.info(args)
@@ -387,32 +372,40 @@ def main():
 
     args.train_batch_size = int(args.train_batch_size / args.gradient_accumulation_steps)
 
+    #为了复现
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    if n_gpu > 0:
-        torch.cuda.manual_seed_all(args.seed)
-    torch.backends.cudnn.deterministic = True###新增，每次返回的卷积算法将是确定的，即默认算法。保证每次运行网络的时候相同输入的输出是固定的
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)  # 为所有GPU设置随机种子
+    torch.backends.cudnn.enabled = False
+    torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(args.seed)  # 为了禁止hash随机化，使得实验可复现。
+    def seed_worker(worker_id):
+        worker_seed = torch.initial_seed() % 2 ** 32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
+
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
+    '''
+    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)    
+    model = BertForSequenceClassification.from_pretrained(args.bert_model,
+                                                          cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
+                                                              args.local_rank),
+                                                          num_labels=5)###要改这个
+    '''
+    #读数据，生成dataframe表格
+    df_train = pd.read_csv(args.train_file, sep='\t')
+    df_dev = pd.read_csv(args.dev_file, sep='\t')
+    df_test = pd.read_csv(args.test_file, sep='\t')
 
-    label_list=["1", "2", "3", "4", "5"]
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
-    # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model,
-    #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
-    #                                                           args.local_rank),
-    #                                                       num_labels=5)###要改这个
-    model = BertForSequenceClassification.from_pretrained(args.bert_model,num_labels=5,
-                                                          output_attentions=False, output_hidden_states=False)###要改这个
-    train_examples = None
-    num_train_steps = None
-
-    if args.do_train:
-        train_examples = read_sem_examples(args.train_file,is_training=True)
-        dev_examples = read_sem_examples(args.dev_file,is_training=True)
-        num_train_steps = int(
-            len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
+    # Load the pretrained Tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,
+                                                               output_attentions=False, output_hidden_states=False)
+    model.to(device)
 
     if args.fp16:
         model.half()
@@ -441,93 +434,57 @@ def main():
         {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay_rate': 0.0}
     ]
 
-    t_total = num_train_steps
-    if args.local_rank != -1:
-        t_total = t_total // torch.distributed.get_world_size()
+    def encode_fn(text_list):
+        all_input_ids = []
+        for text in text_list:
+            input_ids = tokenizer.encode(text, add_special_tokens=True, max_length=128, return_tensors='pt',pad_to_max_length=True)  # 这个长度得改！！！
+            all_input_ids.append(input_ids)
+        all_input_ids = torch.cat(all_input_ids, dim=0)
+        return all_input_ids
 
-    if args.fp16:
-        try:
-            from apex.optimizers import FP16_Optimizer
-            from apex.optimizers import FusedAdam
-        except ImportError:
-            raise ImportError(
-                "Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
-
-        optimizer = FusedAdam(optimizer_grouped_parameters,
-                              lr=args.learning_rate,
-                              bias_correction=False,
-                              max_grad_norm=1.0)
-        if args.loss_scale == 0:
-            optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True)
-        else:
-            optimizer = FP16_Optimizer(optimizer, static_loss_scale=args.loss_scale)
-    else:
-
-        optimizer = AdamW(optimizer_grouped_parameters,lr=args.learning_rate)#这里没有warmup和t_total会出什么问题？？？？
-        '''
-        #BertAdam改成AdamW----------
-                             warmup=args.warmup_proportion,
-                             t_total=t_total)        
-        '''
+    #train_examples = None
+    num_train_steps = None
 
     if args.do_train:
+        # Create the data loader
+        train_text_values = df_train['sentence'].values
+        all_input_ids = encode_fn(train_text_values)
+        labels = df_train['label'].values
+        labels = torch.tensor(labels - 1)  # 减一，让标签从0开始
+        train_data = TensorDataset(all_input_ids, labels)
+        train_dataloader = DataLoader(train_data, batch_size=args.train_batch_size, shuffle=True,
+                                      worker_init_fn=seed_worker)  # _init_fn
 
-        train_features = convert_examples_to_features(
-            examples=train_examples,
-            tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length,
-            label_list=label_list
-        )
-        #增加dev_dataloader
-        dev_features = convert_examples_to_features(
-            examples=dev_examples,
-            tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length,
-            label_list = label_list
-        )
+        dev_text_values = df_dev['sentence'].values
+        dall_input_ids = encode_fn(dev_text_values)
+        dlabels = df_dev['label'].values
+        dlabels = torch.tensor(dlabels - 1)  # 减一，让标签从0开始
+        dev_data = TensorDataset(dall_input_ids, dlabels)
+        dev_dataloader = DataLoader(dev_data, batch_size=args.dev_batch_size, worker_init_fn=seed_worker)
+
+        num_train_steps = int(
+            len(df_train) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
+
+        # create optimizer and learning rate schedule
+        optimizer = AdamW(model.parameters(), lr=args.learning_rate, correct_bias=False)  # 要重现BertAdam特定的行为，需设置correct_bias = False
+        #total_steps = len(train_dataloader) * args.epoch
+        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=int(args.warmup_proportion*num_train_steps), num_training_steps=num_train_steps)#num_warmup_steps不知道
 
         logger.info("***** Running training *****bert-sem")
-        logger.info("  Num examples = %d", len(train_examples))
+        logger.info("  Num examples = %d", len(df_train))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_steps)
         logger.info("***** Running dev *****")
-        logger.info("  Num examples = %d", len(dev_examples))
+        logger.info("  Num examples = %d", len(df_dev))
         logger.info("  Batch size = %d", args.dev_batch_size)
-
-
         with open(output_eval_file, "a") as writer:###
             writer.write("***** Running training *****\t\n")
-            writer.write("  Num examples = %d\t\n" % len(train_examples))
+            writer.write("  Num examples = %d\t\n" % len(df_train))
             writer.write("  Batch size = %d\t\n" % args.train_batch_size)
             writer.write("  Num steps = %d\t\n" % num_train_steps)
             writer.write("***** Running dev *****\t\n")
-            writer.write("  Num examples = %d\t\n" % len(dev_examples))
+            writer.write("  Num examples = %d\t\n" % len(df_dev))
             writer.write("  Batch size = %d\t\n" % args.dev_batch_size)
-
-        all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
-        all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
-        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
-        dall_input_ids = torch.tensor([f.input_ids for f in dev_features], dtype=torch.long)
-        dall_input_mask = torch.tensor([f.input_mask for f in dev_features], dtype=torch.long)
-        dall_segment_ids = torch.tensor([f.segment_ids for f in dev_features], dtype=torch.long)
-        dall_label_ids = torch.tensor([f.label_id for f in dev_features], dtype=torch.long)
-        dev_data = TensorDataset(dall_input_ids, dall_input_mask, dall_segment_ids, dall_label_ids)
-
-        if args.local_rank == -1:
-            train_sampler = RandomSampler(train_data)
-            dev_sampler = RandomSampler(dev_data)
-        else:
-            train_sampler = DistributedSampler(train_data)
-            dev_sampler = DistributedSampler(dev_data)
-
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
-        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.dev_batch_size)
-
-        #记录学习率的
-        total_steps = len(train_dataloader) * args.num_train_epochs
-        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
         TrainLoss = []#新增
         global_step = 0
@@ -538,55 +495,67 @@ def main():
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
+                print('early_stop......')
                 break
-
-            #tr_loss = 0
-            epoch_loss = 0
-            nb_tr_examples, train_steps = 0, 0
 
             for step, batch in enumerate(tqdm(train_dataloader, ncols=50, desc="Iteration")):#新增ncols，进度条长度。默认是10
 
-                model.train()  # 这个位置到底在哪
+                model.train()  # 这个位置正确，保证每一个batch都能进入model.train()的模式
 
-                batch = tuple(t.to(device) for t in batch)
-                input_ids, input_mask, segment_ids, label_ids = batch
+                # batch = tuple(t.to(device) for t in batch)
+                # input_ids, input_mask, segment_ids, label_ids = batch
                 #新增结束---
-                loss, logits = model(input_ids, segment_ids, input_mask, label_ids)
+                #loss = model(input_ids, segment_ids, input_mask, label_ids)
+
+                ##传统的训练函数进来一个batch的数据，计算一次梯度，更新一次网络，而这里用了梯度累加（gradient accumulation）
+                ##梯度累加就是，每次获取1个batch的数据，计算1次梯度，梯度不清空，不断累加，累加一定次数后，根据累加的梯度更新网络参数，然后清空梯度，进行下一次循环。
+                # 梯度累加步骤：1. input output 获取loss：输入文本和标签，通过infer计算得到预测值，计算损失函数
+                out1 = model(batch[0].to(device), token_type_ids=None, attention_mask=(batch[0] > 0).to(device),
+                             labels=batch[1].to(device))
+                loss, logits = out1[:2]
+
                 if n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.fp16 and args.loss_scale != 1.0:
                     # rescale loss for fp16 training
                     # see https://docs.nvidia.com/deeplearning/sdk/mixed-precision-training/index.html
                     loss = loss * args.loss_scale
+
+                # 2.loss.backward() 反向传播，计算当前梯度 2.1 loss regularization
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
                 # tr_loss += loss.item()#epoch_loss
                 # nb_tr_examples += input_ids.size(0)#没用
 
-                train_steps += 1
-
+                #train_steps += 1
+                # 2.2 back propagation
                 if args.fp16:
                     optimizer.backward(loss)
                 else:
-                    loss.backward()
+                    loss.backward()## 反向传播求解梯度
 
-                epoch_loss += loss.item()
+                #epoch_loss += loss.item()
 
+                # 3. 多次循环步骤1-2，不清空梯度，使梯度累加在已有梯度上 update parameters of net
+                #梯度累加了一定次数后，先optimizer.step() 根据累计的梯度更新网络参数，然后optimizer.zero_grad() 清空过往梯度，为下一波梯度累加做准备
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
-                    lr_this_step = args.learning_rate * warmup_linear(global_step / t_total, args.warmup_proportion)
-                    for param_group in optimizer.param_groups:
-                        param_group['lr'] = lr_this_step
-                    optimizer.step()
-                    scheduler.step()###
-                    optimizer.zero_grad()
+                    # lr_this_step = args.learning_rate * warmup_linear(global_step / t_total, args.warmup_proportion)
+                    # for param_group in optimizer.param_groups:
+                    #     param_group['lr'] = lr_this_step
+                    # optimizer the net
+                    torch.nn.utils.clip_grad_norm_(optimizer_grouped_parameters, 1)  # 梯度裁剪不再在AdamW中了
+                    optimizer.step()## 更新权重参数 # update parameters of net
+                    scheduler.step()
+                    optimizer.zero_grad()## 梯度清零 # reset gradient
+
                     global_step += 1
 
                     #新增dev数据集调参
                     if global_step % args.print_step == 0 and global_step != 0:
                         num_model += 1
-                        train_loss = epoch_loss / train_steps
-                        dev_acc = evaluate(model, dev_dataloader, dev_features,device)
+                        #train_loss = epoch_loss / train_steps
+                        dev_acc,_,_,_ = evaluate(model, dev_dataloader, device, args.label_list)
                         # 以 acc 取优
                         if dev_acc > best_acc:
                             num_bestacc += 1
@@ -611,39 +580,26 @@ def main():
         print('打印num_bestacc:'+str(num_bestacc))
 
     if args.do_eval:
-
+        text_li=[]
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
         #     TrainLoss = pickle.load(f)
-        #text_li, _, _ = rea_sem(args.test_file)  # 为了读文本新增这一行
 
         # dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
         df = pd.DataFrame(columns=['text', 'label', 'predict_label'])
-        #df['text'] = text_li
+        # eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
+        # for exa in eval_examples:
+        #     text_li.append(exa.text_a)
+        df['text']=df_test['sentence']
 
-        eval_examples = read_sem_examples(args.test_file,is_training=True)###要改！！
-        df['text'] =eval_examples[1]
-        total_eval_features = convert_examples_to_features(
-            examples=eval_examples,
-            tokenizer=tokenizer,
-            max_seq_length=args.max_seq_length,
-            label_list=label_list
-        )
-            ##label_list=args.label_list)  # label_list要不要呢？先加上吧
+        # Create the test data loader
+        test_text_values = df_test['sentence'].values
+        tall_input_ids = encode_fn(test_text_values)
+        pred_data = TensorDataset(tall_input_ids)
+        pred_dataloader = DataLoader(pred_data, batch_size=args.test_batch_size, worker_init_fn=seed_worker)
 
-        eval_features = total_eval_features
         logger.info("***** Running evaluation *****bert-sem")
-        logger.info("  Num examples = %d", len(eval_examples))
+        logger.info("  Num examples = %d", len(df_test))
         logger.info("  Batch size = %d", args.eval_batch_size)
-
-        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
-        all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
-        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
-
-        eval_sampler = SequentialSampler(eval_data)#和traindata不同的sampler
-
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
 
         output_eval_file = os.path.join(args.output_dir, "result.txt")
 
@@ -651,15 +607,15 @@ def main():
         #train_loss = TrainLoss[epoch]
         output_model_file = os.path.join(args.output_dir, "_pytorch_model.bin")
         model_state_dict = torch.load(output_model_file)
-        # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
-        #                                                       num_labels=5)###改
-        model = BertForSequenceClassification.from_pretrained(args.bert_model, state_dict=model_state_dict,
-                                                              num_labels=5)
+        model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,model_state_dict=model_state_dict,
+                                                                   output_attentions=False, output_hidden_states=False)
+
         model.to(device)
         logger.info("Start evaluating")
 
         print("=======================")
         print("test_total...")
+        '''        
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
@@ -696,8 +652,16 @@ def main():
         macro_f1 = metrics.f1_score(sum(predict_label_li,[]),sum(label_li,[]),labels=[0,1,2,3,4], average='macro')
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / nb_eval_examples
+        '''
+        eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, pred_dataloader, device, args.label_list)
 
-        result = {'eval_accuracy': eval_accuracy,'macro_f1':macro_f1}
+        df['predict_label'] = all_preds
+        df['label'] = all_labels
+        ntest_sg_label = os.path.join(args.output_dir, args.predict_test_file)
+        df.to_csv(ntest_sg_label, sep='\t')
+
+        eval_macro_f1 = eval_report['macro avg']['f1-score']
+        result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}
 
         with open(output_eval_file, "a") as writer:
             logger.info("***** Eval results *****")
