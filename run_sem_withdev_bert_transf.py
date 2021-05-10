@@ -543,7 +543,7 @@ def main():
                     # for param_group in optimizer.param_groups:
                     #     param_group['lr'] = lr_this_step
                     # optimizer the net
-                    torch.nn.utils.clip_grad_norm_(optimizer_grouped_parameters, 1)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1)#optimizer_grouped_parameters
                     # 梯度裁剪不再在AdamW中了#大于1的梯度将其设为1.0, 以防梯度爆炸。解决神经网络训练过拟合。只在训练的时候使用，在测试的时候不用
                     optimizer.step()## 更新权重参数 # update parameters of net
                     scheduler.step()
@@ -595,7 +595,7 @@ def main():
         test_text_values = df_test['sentence'].values
         tall_input_ids = encode_fn(test_text_values)
         pred_data = TensorDataset(tall_input_ids)
-        pred_dataloader = DataLoader(pred_data, batch_size=args.test_batch_size, worker_init_fn=seed_worker)
+        pred_dataloader = DataLoader(pred_data, batch_size=args.eval_batch_size, worker_init_fn=seed_worker)
 
         logger.info("***** Running evaluation *****bert-sem")
         logger.info("  Num examples = %d", len(df_test))
@@ -607,7 +607,7 @@ def main():
         #train_loss = TrainLoss[epoch]
         output_model_file = os.path.join(args.output_dir, "_pytorch_model.bin")
         model_state_dict = torch.load(output_model_file)
-        model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,model_state_dict=model_state_dict,
+        model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,state_dict=model_state_dict,
                                                                    output_attentions=False, output_hidden_states=False)
 
         model.to(device)
