@@ -210,9 +210,8 @@ def evaluate(model, dataloader, device, label_list):
 
     for batch in dataloader:
         with torch.no_grad():
-            out2 = model(batch[0].to(device), token_type_ids=None, attention_mask=(batch[0] > 0).to(device),
-                     labels=batch[1].to(device))
-        loss, logits = out2[:2]
+            out2 = model(batch[0].to(device), token_type_ids=None, attention_mask=(batch[0] > 0).to(device))#不需要loss，所以label=None
+        logits = out2[0]
         preds = logits.detach().cpu().numpy()
         outputs = np.argmax(preds, axis=1)
         all_preds = np.append(all_preds, outputs)
@@ -466,7 +465,7 @@ def main():
             len(df_train) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
         # create optimizer and learning rate schedule
-        optimizer = AdamW(model.parameters(), lr=args.learning_rate, correct_bias=False)  # 要重现BertAdam特定的行为，需设置correct_bias = False
+        optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, correct_bias=False)  # 要重现BertAdam特定的行为，需设置correct_bias = False
         #total_steps = len(train_dataloader) * args.epoch
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=int(args.warmup_proportion*num_train_steps), num_training_steps=num_train_steps)#num_warmup_steps不知道
 
@@ -544,7 +543,8 @@ def main():
                     # for param_group in optimizer.param_groups:
                     #     param_group['lr'] = lr_this_step
                     # optimizer the net
-                    torch.nn.utils.clip_grad_norm_(optimizer_grouped_parameters, 1)  # 梯度裁剪不再在AdamW中了
+                    torch.nn.utils.clip_grad_norm_(optimizer_grouped_parameters, 1)
+                    # 梯度裁剪不再在AdamW中了#大于1的梯度将其设为1.0, 以防梯度爆炸。解决神经网络训练过拟合。只在训练的时候使用，在测试的时候不用
                     optimizer.step()## 更新权重参数 # update parameters of net
                     scheduler.step()
                     optimizer.zero_grad()## 梯度清零 # reset gradient
