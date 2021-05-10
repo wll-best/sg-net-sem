@@ -594,7 +594,9 @@ def main():
         # Create the test data loader
         test_text_values = df_test['sentence'].values
         tall_input_ids = encode_fn(test_text_values)
-        pred_data = TensorDataset(tall_input_ids)
+        tlabels = df_test['label'].values
+        tlabels = torch.tensor(tlabels - 1)  # 减一，让标签从0开始
+        pred_data = TensorDataset(tall_input_ids,tlabels)
         pred_dataloader = DataLoader(pred_data, batch_size=args.eval_batch_size, worker_init_fn=seed_worker)
 
         logger.info("***** Running evaluation *****bert-sem")
