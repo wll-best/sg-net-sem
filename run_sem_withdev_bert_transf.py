@@ -28,9 +28,13 @@ import numpy as np
 import torch
 from torch.utils.data import (DataLoader,TensorDataset)
 
-from transformers import AutoTokenizer
-from transformers import AutoModelForSequenceClassification, AdamW
-from transformers import get_linear_schedule_with_warmup
+# from transformers import AutoTokenizer
+# from transformers import AutoModelForSequenceClassification
+
+from transformers import BertTokenizer
+from transformers import BertForSequenceClassification
+
+from transformers import get_linear_schedule_with_warmup, AdamW
 
 from sklearn import metrics
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -228,9 +232,14 @@ def main():
     df_test = pd.read_csv(args.test_file, sep='\t')
 
     # Load the pretrained Tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
-    model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,
+    # tokenizer = AutoTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    # model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,
+    #                                                            output_attentions=False, output_hidden_states=False)
+    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    model = BertForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,
                                                                output_attentions=False, output_hidden_states=False)
+
+
     model.to(device)
 
     if args.fp16:
@@ -393,7 +402,9 @@ def main():
         output_eval_file = os.path.join(args.output_dir, "result.txt")
         output_model_file = os.path.join(args.output_dir, "_pytorch_model.bin")
         model_state_dict = torch.load(output_model_file)
-        model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,state_dict=model_state_dict,
+        # model = AutoModelForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,state_dict=model_state_dict,
+        #                                                            output_attentions=False, output_hidden_states=False)
+        model = BertForSequenceClassification.from_pretrained(args.bert_model, num_labels=5,state_dict=model_state_dict,
                                                                    output_attentions=False, output_hidden_states=False)
 
         model.to(device)
