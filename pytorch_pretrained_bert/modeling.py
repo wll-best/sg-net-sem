@@ -1566,6 +1566,7 @@ class BertForSemSpanMask(BertPreTrainedModel):
         self.apply(self.init_bert_weights)
         self.ddd=nn.Linear(config.hidden_size*2,config.hidden_size)###2:改成拼接
         self.multihead_attn = nn.MultiheadAttention(768, 12)
+        self.activation=nn.Tanh()
     #新增input_span_mask
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, input_span_mask=None):
         input_span_mask = input_span_mask.cuda()###
@@ -1596,10 +1597,30 @@ class BertForSemSpanMask(BertPreTrainedModel):
 
         span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
         w = F.softmax(self.w)
-        #原来的做加法a
-        sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)
-        pooled_output = self.pooler(sequence_output)
+
         '''
+        #31不用他的池化 --少一个全连接dense--31np
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
+        attn_output=torch.cat([attn_output1,attn_output2],2)
+        sequence_output = self.ddd(attn_output)
+        sequence_output=sequence_output[:, 0]
+        pooled_output = self.activation(sequence_output)
+
+
+        #31不用他的池化 --少一个全连接dense--用他的加法--31a_np
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
+        attn_output=self.gamma * (w[0] * attn_output1 + w[1] * attn_output2)
+        attn_output=attn_output[:, 0]
+        pooled_output = self.activation(attn_output)
+        
+        #31-用他的加法--31a_bp
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
+        attn_output=self.gamma * (w[0] * attn_output1 + w[1] * attn_output2)
+        pooled_output = self.pooler(attn_output)
+        
         #原来的做加法a
         sequence_output = self.gamma * (w[0] * sequence_output + w[1] * span_sequence_output)
         pooled_output = self.pooler(sequence_output)
@@ -1613,6 +1634,7 @@ class BertForSemSpanMask(BertPreTrainedModel):
         #multihead_attn(Q，K，V)--第一种（V = K）：一个注意力att1---11
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,sequence_output)
         pooled_output = self.pooler(attn_output1)
+        
        
         #第一种对调前两个参数---12
         attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output,span_sequence_output,span_sequence_output)
@@ -1632,6 +1654,14 @@ class BertForSemSpanMask(BertPreTrainedModel):
         attn_output=torch.cat([attn_output1,attn_output2],2)
         sequence_output = self.ddd(attn_output)#这里------损失多？？？
         pooled_output = self.pooler(sequence_output)
+        
+        #31不用他的池化 --少一个全连接dense--
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
+        attn_output=torch.cat([attn_output1,attn_output2],2)
+        sequence_output = self.ddd(attn_output)              
+        sequence_output=sequence_output[:, 0]
+        pooled_output = self.activation(sequence_output)                
 
         #第三种对调前两个参数---32
         attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output, span_sequence_output,   span_sequence_output)
@@ -1639,6 +1669,21 @@ class BertForSemSpanMask(BertPreTrainedModel):
         attn_output=torch.cat([attn_output1,attn_output2],2)
         sequence_output = self.ddd(attn_output)
         pooled_output = self.pooler(sequence_output)
+        
+        #32不用他的池化  --少一个全连接dense      #第三种对调前两个参数---32
+        attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output, span_sequence_output,   span_sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(sequence_output, span_sequence_output,   sequence_output)
+        attn_output=torch.cat([attn_output1,attn_output2],2)
+        print('打印')
+        print(attn_output.shape)
+        sequence_output = self.ddd(attn_output)
+        print(sequence_output.shape)
+        sequence_output=sequence_output[:, 0]
+        print(sequence_output.shape)
+        print('poo')
+        pooled_output = self.activation(sequence_output)
+        print(pooled_output.shape)
+        print('')        
         '''
 
         ###结束变化
