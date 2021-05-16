@@ -23,10 +23,6 @@ import nltk
 from nltk import word_tokenize, sent_tokenize
 from tqdm import tqdm
 
-import csv
-from nltk import word_tokenize
-from nltk.tokenize import MWETokenizer
-
 uid = uuid.uuid4().hex[:6]
 
 REVERSE_TOKEN_MAPPING = dict([(value, key) for key, value in tokens.BERT_TOKEN_MAPPING.items()])
@@ -742,7 +738,7 @@ def run_parse(args):
                     data = {}
                     data['guid'] = int(total)
                     #以下四个元素sentences，pred_head，pred_type，convert_()都是二维的列表
-                    indict = {'text_tokens':sentences[i].split(' '),
+                    indict = {'text_tokens':word_tokenize(sentences[i]),
                               'pred_head_text': [str(s) for s in (pred_head[i])],
                               # pred_head[i]原型是[1,4,等等]将里面的数字转换成字符型
                               'pred_type_text': pred_type[i],
