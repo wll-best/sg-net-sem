@@ -742,7 +742,7 @@ def run_parse(args):
                     data = {}
                     data['guid'] = int(total)
                     #以下四个元素sentences，pred_head，pred_type，convert_()都是二维的列表
-                    indict = {'text_tokens': sentences[i],
+                    indict = {'text_tokens': [str(t) for t in (sentences[i])],
                               'pred_head_text': [str(s) for s in (pred_head[i])],
                               # pred_head[i]原型是[1,4,等等]将里面的数字转换成字符型
                               'pred_type_text': pred_type[i],
