@@ -680,13 +680,22 @@ def run_parse(args):
     parser.eval()
     print("Parsing sentences...")
 
+    # with open(args.input_path) as input_file:
+    #     reader = csv.reader(input_file, delimiter="\t")
+    #     sentences = []
+    #     #跳过第一行
+    #     for (i,sentence) in enumerate(reader):
+    #         if i == 0:
+    #             continue
+    #         sentences.append(words.strip() for words in sentence)
     with open(args.input_path) as input_file:
-        sentences = input_file.readlines()
-    #跳过第一行
-    for (i,sentence) in enumerate(sentences):
-        if i == 0:
-            continue
-        sentences = [sentence.strip() for sentence in sentences if len(sentence.strip()) > 0]
+        next(input_file)#跳过第一行
+        old_sentences = input_file.readlines()
+    sentences=[]
+    for sen in old_sentences:
+        sentence=sen.split('\t')
+        nsentence=sentence[0].strip()
+        sentences.append([nsentence])
 
     if args.max_tokens > 0:
         tmp = []
