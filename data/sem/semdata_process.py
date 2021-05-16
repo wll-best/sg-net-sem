@@ -124,6 +124,43 @@ def ntest_label_split(bdf_14,bdf_15,bdf_16,ntest):
         print('15正确的数目' + str(rightnum15) + ',  15总数目' + str(len(row15)) + ',  15的准确率：' + str(acc15)+',  15的macro_f1：' + str(macro_f1_15))
         print('16正确的数目' + str(rightnum16) + ',  16总数目' + str(len(row16)) + ',  16的准确率：' + str(acc16)+',  16的macro_f1：' + str(macro_f1_16))
 
+
+from nltk import word_tokenize
+import json
+def chg_lal(input_file,out_file):
+    #将text_tokens中的元素用word_tokenize重新分割，因为句法树就用了这个
+    input_tag_data = []
+    with open(input_file,'r') as reader:
+        for line in reader:
+            input_tag_data.append(json.loads(line))
+    guid_to_tag_idx_map = {}
+    token_text=[]
+    pred_head=[]
+    pred_type=[]
+    hpsg_list=[]
+    for idx, tag_data in enumerate(input_tag_data):
+        guid = tag_data["guid"]
+        guid_to_tag_idx_map[guid] = idx
+        tag_rep = tag_data["tag_rep"]
+        token_text.append(word_tokenize(" ".join(tag_rep['text_tokens'])))
+        pred_head.append(tag_rep["pred_head_text"])
+        pred_type.append(tag_rep["pred_type_text"])
+        hpsg_list.append(tag_rep["hpsg_list_text"])
+
+    total = 1
+    with open(out_file, 'w') as fout:
+        for i in range(len(token_text)):
+            data = {}
+            data['guid'] = int(total)
+            indict = {'text_tokens': token_text[i],
+                      'pred_head_text': pred_head[i],
+                      'pred_type_text': pred_type[i],
+                      'hpsg_list_text': hpsg_list[i]}
+            data['tag_rep'] = indict
+            fidata = json.dumps(data)
+            fout.write(fidata + '\n')
+            total += 1
+
 '''
 数据集说明：
 #没打乱顺序
@@ -142,5 +179,7 @@ if __name__ == "__main__":
     # chgt('dev.tsv', 'dev_t.tsv')
     #semdata_split('sem_t.tsv','ntrain.tsv','ndev.tsv','ntest.tsv')
 
-    ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
-                      'ntest_label.tsv')
+    # ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
+    #                   'ntest_label.tsv')
+
+    chg_lal('lal_sgnet_ntrain_0.json','lal_sgnet_ntrain.json')
