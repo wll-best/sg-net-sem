@@ -128,7 +128,7 @@ def ntest_label_split(bdf_14,bdf_15,bdf_16,ntest):
 from nltk import word_tokenize
 import json
 def chg_lal(input_file,out_file):
-    #将text_tokens中的元素用word_tokenize重新分割，因为句法树就用了这个
+    #将text_tokens中的元素用word_tokenize重新分割(后缀0删掉)，因为句法树就用了这个----这个函数没用啦
     input_tag_data = []
     with open(input_file,'r') as reader:
         for line in reader:
@@ -142,7 +142,7 @@ def chg_lal(input_file,out_file):
         guid = tag_data["guid"]
         guid_to_tag_idx_map[guid] = idx
         tag_rep = tag_data["tag_rep"]
-        token_text.append(word_tokenize(" ".join(tag_rep['text_tokens'])))
+        token_text.append(word_tokenize(" ".join(tag_rep['text_tokens'])))#不对啊。会把'....'分割成'...'和’.’
         pred_head.append(tag_rep["pred_head_text"])
         pred_type.append(tag_rep["pred_type_text"])
         hpsg_list.append(tag_rep["hpsg_list_text"])
@@ -160,6 +160,36 @@ def chg_lal(input_file,out_file):
             fidata = json.dumps(data)
             fout.write(fidata + '\n')
             total += 1
+
+def find_not_eq(input):
+    #找长度不等的
+    input_tag_data = []
+    with open(input,'r') as reader:
+        for line in reader:
+            input_tag_data.append(json.loads(line))
+    guid_to_tag_idx_map = {}
+    token_text=[]
+    pred_head=[]
+    pred_type=[]
+    hpsg_list=[]
+    for idx, tag_data in enumerate(input_tag_data):
+        guid = tag_data["guid"]
+        guid_to_tag_idx_map[guid] = idx
+        tag_rep = tag_data["tag_rep"]
+        #token_text.append(word_tokenize(" ".join(tag_rep['text_tokens'])))
+        token_text.append((tag_rep['text_tokens']))
+        pred_head.append(tag_rep["pred_head_text"])
+        pred_type.append(tag_rep["pred_type_text"])
+        hpsg_list.append(tag_rep["hpsg_list_text"])
+    wn=0
+    for i in range(len(token_text)):
+        if len(token_text[i])!=len(hpsg_list[i]):
+            wn+=1
+            print(token_text[i],len(token_text[i]))
+            print(hpsg_list[i],len(hpsg_list[i]))
+            print(pred_head[i],len(pred_head[i]))
+            print(pred_type[i],len(pred_type[i]))
+    print('wrong number'+str(wn))
 
 '''
 数据集说明：
@@ -182,4 +212,9 @@ if __name__ == "__main__":
     # ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
     #                   'ntest_label.tsv')
 
-    chg_lal('lal_sgnet_ntrain_0.json','lal_sgnet_ntrain.json')
+    #chg_lal('lal_sgnet_ntrain_0.json','lal_sgnet_ntrain.json')
+    find_not_eq('lal_sgnet_ntrain_1.json')
+    print('-------dev--------')
+    find_not_eq('lal_sgnet_ndev_1.json')
+    print('-------test--------')
+    find_not_eq('lal_sgnet_ntest_1.json')
