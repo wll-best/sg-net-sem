@@ -685,7 +685,7 @@ def main():
         result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}
 
         with open(output_eval_file, "a") as writer:
-            logger.info("***** Eval results *****")
+            logger.info("***** Eval results *****bert-sem")
             writer.write("\t\n***** Eval results   %s *****\t\n" % (
                  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
             for key in sorted(result.keys()):
