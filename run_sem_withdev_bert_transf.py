@@ -306,11 +306,11 @@ def main():
         logger.info("  Num examples = %d", len(df_dev))
         logger.info("  Batch size = %d", args.dev_batch_size)
         with open(output_eval_file, "a") as writer:###
-            writer.write("***** Running training *****transformers\t\n")
+            writer.write("\t\n***** Running training *****transformers\t\n")
             writer.write("  Num examples = %d\t\n" % len(df_train))
             writer.write("  Batch size = %d\t\n" % args.train_batch_size)
             writer.write("  Num steps = %d\t\n" % num_train_steps)
-            writer.write("***** Running dev *****transformers\t\n")
+            writer.write("\t\n***** Running dev *****transformers\t\n")
             writer.write("  Num examples = %d\t\n" % len(df_dev))
             writer.write("  Batch size = %d\t\n" % args.dev_batch_size)
 
@@ -379,8 +379,7 @@ def main():
                             early_stop_times += 1
 
         with open(output_eval_file, "a") as writer:###
-            writer.write("\t\n")
-            writer.write("***** Ending dev *****transformers\t\n")
+            writer.write("\t\n***** Ending dev *****transformers\t\n")
             writer.write("  global_step : %d\t\n" % global_step)
             writer.write("  num_model : %d\t\n" % num_model)
             writer.write("  num_bestacc : %d\t\n" % num_bestacc)

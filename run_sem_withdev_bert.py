@@ -479,11 +479,11 @@ def main():
 
 
         with open(output_eval_file, "a") as writer:###
-            writer.write("***** Running training *****bert-sem\t\n")
+            writer.write("\t\n***** Running training *****bert-sem\t\n")
             writer.write("  Num examples = %d\t\n" % len(train_examples))
             writer.write("  Batch size = %d\t\n" % args.train_batch_size)
             writer.write("  Num steps = %d\t\n" % num_train_steps)
-            writer.write("***** Running dev *****bert-sem\t\n")
+            writer.write("\t\n***** Running dev *****bert-sem\t\n")
             writer.write("  Num examples = %d\t\n" % len(dev_examples))
             writer.write("  Batch size = %d\t\n" % args.dev_batch_size)
 
@@ -593,8 +593,7 @@ def main():
         #     pickle.dump(TrainLoss, f)
 
         with open(output_eval_file, "a") as writer:###
-            writer.write("\t\n")
-            writer.write("***** Ending dev *****bert-sem\t\n")
+            writer.write("\t\n***** Ending dev *****bert-sem\t\n")
             writer.write("  global_step : %d\t\n" % global_step)
             writer.write("  num_model : %d\t\n" % num_model)
             writer.write("  num_bestacc : %d\t\n" % num_bestacc)

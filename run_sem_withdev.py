@@ -667,12 +667,11 @@ def main():
 
 
         with open(output_eval_file, "a") as writer:###
-            writer.write("\t\n")
-            writer.write("***** Running training *****sg-net-sem\t\n")
+            writer.write("\t\n***** Running training *****sg-net-sem\t\n")
             writer.write("  Num examples = %d\t\n" % len(train_examples))
             writer.write("  Batch size = %d\t\n" % args.train_batch_size)
             writer.write("  Num steps = %d\t\n" % num_train_steps)
-            writer.write("***** Running dev *****sg-net-sem\t\n")
+            writer.write("\t\n***** Running dev *****sg-net-sem\t\n")
             writer.write("  Num examples = %d\t\n" % len(dev_examples))
             writer.write("  Batch size = %d\t\n" % args.dev_batch_size)
 
