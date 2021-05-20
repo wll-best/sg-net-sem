@@ -298,7 +298,7 @@ def main():
         #total_steps = len(train_dataloader) * args.epoch
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=int(args.warmup_proportion*num_train_steps), num_training_steps=num_train_steps)#num_warmup_steps不知道
 
-        logger.info("***** Running training *****bert-sem")
+        logger.info("***** Running training *****transformers")
         logger.info("  Num examples = %d", len(df_train))
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", num_train_steps)
@@ -402,7 +402,7 @@ def main():
         pred_data = TensorDataset(tall_input_ids,tlabels)
         pred_dataloader = DataLoader(pred_data, batch_size=args.eval_batch_size, worker_init_fn=seed_worker)
 
-        logger.info("***** Running evaluation *****bert-sem")
+        logger.info("***** Running evaluation *****transformers")
         logger.info("  Num examples = %d", len(df_test))
         logger.info("  Batch size = %d", args.eval_batch_size)
 
@@ -434,7 +434,7 @@ def main():
             writer.write("  Num examples = %d\t\n" % df.shape[0])
             writer.write("  Batch size = %d\t\n" % args.eval_batch_size)
 
-            logger.info("***** Eval results *****sg-net-sem")
+            logger.info("***** Eval results *****transformers")
             writer.write("\t\n***** Eval results   %s *****transformers\t\n" % (
                  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
             for key in sorted(result.keys()):

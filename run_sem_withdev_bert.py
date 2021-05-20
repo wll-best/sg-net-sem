@@ -42,6 +42,9 @@ from pytorch_pretrained_bert.modeling import *
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam
 from sklearn import metrics
+from tensorboardX import SummaryWriter
+import time
+
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
@@ -511,6 +514,10 @@ def main():
         global_step = 0
         best_acc = 0
         early_stop_times = 0
+
+        writer = SummaryWriter(
+            log_dir=args.log_dir + '/' + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime(time.time())))
+
         num_model = 0
         num_bestacc=0
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
@@ -587,7 +594,7 @@ def main():
 
         with open(output_eval_file, "a") as writer:###
             writer.write("\t\n")
-            writer.write("***** Ending dev *****sg-net-sem\t\n")
+            writer.write("***** Ending dev *****bert-sem\t\n")
             writer.write("  global_step : %d\t\n" % global_step)
             writer.write("  num_model : %d\t\n" % num_model)
             writer.write("  num_bestacc : %d\t\n" % num_bestacc)
@@ -697,7 +704,7 @@ def main():
             writer.write("  Num examples = %d\t\n" % len(eval_examples))
             writer.write("  Batch size = %d\t\n" % args.eval_batch_size)
 
-            logger.info("***** Eval results *****sg-net-sem")
+            logger.info("***** Eval results *****bert-sem")
             writer.write("\t\n***** Eval results   %s *****bert-sem\t\n" % (
                  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
             for key in sorted(result.keys()):
