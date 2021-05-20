@@ -476,11 +476,11 @@ def main():
 
 
         with open(output_eval_file, "a") as writer:###
-            writer.write("***** Running training *****\t\n")
+            writer.write("***** Running training *****bert-sem\t\n")
             writer.write("  Num examples = %d\t\n" % len(train_examples))
             writer.write("  Batch size = %d\t\n" % args.train_batch_size)
             writer.write("  Num steps = %d\t\n" % num_train_steps)
-            writer.write("***** Running dev *****\t\n")
+            writer.write("***** Running dev *****bert-sem\t\n")
             writer.write("  Num examples = %d\t\n" % len(dev_examples))
             writer.write("  Batch size = %d\t\n" % args.dev_batch_size)
 
@@ -584,9 +584,17 @@ def main():
         #
         # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'wb') as f:
         #     pickle.dump(TrainLoss, f)
-        print('打印global_step：'+str(global_step))
-        print('打印num_model:'+str(num_model))
-        print('打印num_bestacc:'+str(num_bestacc))
+
+        with open(output_eval_file, "a") as writer:###
+            writer.write("\t\n")
+            writer.write("***** Ending dev *****sg-net-sem\t\n")
+            writer.write("  global_step : %d\t\n" % global_step)
+            writer.write("  num_model : %d\t\n" % num_model)
+            writer.write("  num_bestacc : %d\t\n" % num_bestacc)
+
+        # print('打印global_step：'+str(global_step))
+        # print('打印num_model:'+str(num_model))
+        # print('打印num_bestacc:'+str(num_bestacc))
 
     if args.do_eval:
         text_li=[]
@@ -685,8 +693,12 @@ def main():
         result = {'eval_accuracy': eval_accuracy,'eval_macro_f1':eval_macro_f1}
 
         with open(output_eval_file, "a") as writer:
-            logger.info("***** Eval results *****bert-sem")
-            writer.write("\t\n***** Eval results   %s *****\t\n" % (
+            writer.write("***** Running evaluation *****bert-sem\t\n")
+            writer.write("  Num examples = %d\t\n" % len(eval_examples))
+            writer.write("  Batch size = %d\t\n" % args.eval_batch_size)
+
+            logger.info("***** Eval results *****sg-net-sem")
+            writer.write("\t\n***** Eval results   %s *****bert-sem\t\n" % (
                  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
             for key in sorted(result.keys()):
                 logger.info("  %s = %s", key, str(result[key]))
