@@ -13,29 +13,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""BERT finetuning runner."""
+"""sg-net-sem"""
 
 from __future__ import absolute_import, division, print_function
 
 #我的
 import pandas as pd
-import json
-import time
-
 import argparse
 import csv
-import logging
-import os
 import random
-import pickle
 from tqdm import tqdm, trange
-import spacy
-import numpy as np
-import torch
+
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
-
 
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import *
@@ -520,7 +511,6 @@ def main():
                         default='ntest_sg_label.tsv',
                         type=str)
 
-
     args = parser.parse_args()
     logger.info(args)
     output_eval_file = os.path.join(args.output_dir, args.output_file)
@@ -568,10 +558,7 @@ def main():
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
-    # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model,
-    #                                                       cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
-    #                                                           args.local_rank),
-    #                                                       num_labels=5)###要改这个
+
     model = BertForSemSpanMask.from_pretrained(args.bert_model,
                                                           cache_dir=PYTORCH_PRETRAINED_BERT_CACHE / 'distributed_{}'.format(
                                                               args.local_rank),
@@ -722,7 +709,6 @@ def main():
             epoch_loss = 0
             all_preds = np.array([], dtype=int)
             all_labels = np.array([], dtype=int)
-            #nb_tr_examples=0
             train_steps = 0
 
             for step, batch in enumerate(tqdm(train_dataloader, ncols=50, desc="Iteration")):#新增ncols，进度条长度。默认是10
@@ -756,8 +742,6 @@ def main():
                     loss = loss * args.loss_scale
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
-                # tr_loss += loss.item()#epoch_loss
-                # nb_tr_examples += input_ids.size(0)#没用
 
                 train_steps += 1
 
@@ -824,12 +808,6 @@ def main():
                         else:
                             early_stop_times += 1
 
-            #---------------------------------------------
-        #     TrainLoss.append(epoch_loss/train_steps)#这个咋整
-        #
-        # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'wb') as f:
-        #     pickle.dump(TrainLoss, f)
-
         with open(output_eval_file, "a") as writer:###
             writer.write("\t\n")
             writer.write("***** Ending dev *****sg-net-sem\t\n")
@@ -837,15 +815,10 @@ def main():
             writer.write("  num_model : %d\t\n" % num_model)
             writer.write("  num_bestacc : %d\t\n" % num_bestacc)
 
-        # print('打印global_step：'+str(global_step))
-        # print('打印num_model:'+str(num_model))
-        # print('打印num_bestacc:'+str(num_bestacc))
     writer.close()
 
     if args.do_eval:
 
-        # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
-        #     TrainLoss = pickle.load(f)
         text_li, _, _ = rea_sem(args.test_file)#为了读文本新增这一行
         #dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
         df=pd.DataFrame(columns=['text', 'label', 'predict_label'])
@@ -877,13 +850,9 @@ def main():
 
         output_eval_file = os.path.join(args.output_dir, "result.txt")
 
-        #for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
-        #train_loss = TrainLoss[epoch]
         output_model_file = os.path.join(args.output_dir, "_pytorch_model.bin")
         model_state_dict = torch.load(output_model_file)
 
-        # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
-        #                                                       num_labels=5)###改
         model = BertForSemSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
                                                               num_choices=5)
         model.to(device)
@@ -891,57 +860,6 @@ def main():
 
         print("=======================")
         print("test_total...")
-        '''
-        model.eval()
-        eval_loss, eval_accuracy = 0, 0
-        nb_eval_steps, nb_eval_examples = 0, 0
-        label_li=[]
-        predict_label_li=[]
-        for input_ids, input_mask, segment_ids, label_ids, example_index in eval_dataloader:
-
-            input_ids = input_ids.to(device)
-            input_mask = input_mask.to(device)
-            segment_ids = segment_ids.to(device)
-            label_ids = label_ids.to(device)
-            #新增开始,和do_train部分一样
-            input_span_mask = np.zeros((input_ids.size(0), input_ids.size(1), input_ids.size(2), input_ids.size(2)))
-            for batch_idx, ex_idx in enumerate(example_index):
-                total_eval_feature = total_eval_features[ex_idx.item()]
-                choice_features = total_eval_feature.choices_features
-                for idx, choice_fea in enumerate(choice_features):
-                    span_mask = choice_fea["input_span_mask"]
-                    for i, i_mask in enumerate(span_mask):
-                        for j in i_mask:
-                            input_span_mask[batch_idx, idx, i, j] = 1
-            input_span_mask = torch.tensor(input_span_mask, dtype=torch.long)
-            #新增结束
-            with torch.no_grad():
-                tmp_eval_loss = model(input_ids, segment_ids, input_mask, label_ids,
-                                      input_span_mask=input_span_mask)
-                logits = model(input_ids, segment_ids, input_mask, input_span_mask=input_span_mask)
-
-            logits = logits.detach().cpu().numpy()
-            label_ids = label_ids.to('cpu').numpy()
-
-            tmp_eval_accuracy = accuracy(logits, label_ids)#一个eval_batch中预测对的个数,均为0-4
-            
-            label_li.append(label_ids.tolist())
-            predict_label_li.append(np.argmax(logits,axis=1).tolist())
-
-            eval_loss += tmp_eval_loss.mean().item()
-            eval_accuracy += tmp_eval_accuracy
-
-            nb_eval_examples += input_ids.size(0)
-            nb_eval_steps += 1
-
-
-        df['predict_label']=sum(predict_label_li,[])   
-        df['label']=sum(label_li,[])#这个label_li是标签减去1，即索引的列表。sum这个函数是将二维列表变一维列表      
-        df.to_csv("ntest_sg_label.tsv",sep='\t')
-        macro_f1 = metrics.f1_score(sum(predict_label_li,[]),sum(label_li,[]),labels=[0,1,2,3,4], average='macro')
-        eval_loss = eval_loss / nb_eval_steps
-        eval_accuracy = eval_accuracy / nb_eval_examples
-'''
 
         _, eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, eval_dataloader, criterion, device, args.label_list,eval_features)
 

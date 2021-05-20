@@ -14,24 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """BERT finetuning runner."""
-#测试baseline-----原始的bert
+#测试baseline-----原始的bert-sem
 from __future__ import absolute_import, division, print_function
 
 #我的
 import pandas as pd
-import json
-import time
-
 import argparse
 import csv
-import logging
-import os
 import random
-import pickle
+
 from tqdm import tqdm, trange
-import spacy
-import numpy as np
-import torch
+
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
@@ -205,10 +198,11 @@ def classifiction_metric(preds, labels, label_list):
 
     return acc, report
 
-def evaluate(model, dataloader, device, label_list):
+def evaluate(model, dataloader,criterion, device, label_list):
     model.eval()
     all_preds = np.array([], dtype=int)
     all_labels = np.array([], dtype=int)
+    epoch_loss = 0
 
     for input_ids, input_mask, segment_ids, label_ids in dataloader:
         input_ids = input_ids.to(device)
@@ -218,6 +212,7 @@ def evaluate(model, dataloader, device, label_list):
 
         with torch.no_grad():
             logits = model(input_ids, segment_ids, input_mask, labels=None)
+        loss = criterion(logits.view(-1, len(label_list)), label_ids.view(-1))
         preds = logits.detach().cpu().numpy()
         outputs = np.argmax(preds, axis=1)
         all_preds = np.append(all_preds, outputs)
@@ -225,8 +220,10 @@ def evaluate(model, dataloader, device, label_list):
         label_ids = label_ids.to('cpu').numpy()
         all_labels = np.append(all_labels, label_ids)
 
+        epoch_loss += loss.mean().item()
+
     acc, report = classifiction_metric(all_preds, all_labels, label_list)
-    return acc, report, all_preds, all_labels
+    return epoch_loss / len(dataloader), acc, report, all_preds, all_labels
 
 def main():
     parser = argparse.ArgumentParser()
@@ -333,7 +330,10 @@ def main():
                         type=int,
                         help="多少步进行模型保存以及日志信息写入")
     parser.add_argument("--early_stop", type=int, default=50, help="提前终止，多少次dev acc 不再连续增大，就不再训练")
-
+    parser.add_argument("--log_dir",
+                        default="log_dir",
+                        type=str,
+                        help="日志目录，主要用于 tensorboard 分析")
     parser.add_argument("--label_list",
                         default=["0", "1", "2", "3", "4"],
                         type=list,
@@ -346,6 +346,7 @@ def main():
     logger.info(args)
     output_eval_file = os.path.join(args.output_dir, args.output_file)
     os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(args.log_dir, exist_ok=True)#如果已经存在，不抛出异常
 
     with open(output_eval_file, "w") as writer:
         writer.write("%s\t\n" % args)
@@ -455,6 +456,8 @@ def main():
                              warmup=args.warmup_proportion,
                              t_total=t_total)
 
+    criterion = nn.CrossEntropyLoss()
+    criterion = criterion.to(device)
 
     if args.do_train:
         train_features = convert_examples_to_features(
@@ -510,25 +513,26 @@ def main():
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size,worker_init_fn=seed_worker)
         dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.dev_batch_size,worker_init_fn=seed_worker)
 
-        TrainLoss = []#新增
         global_step = 0
         best_acc = 0
         early_stop_times = 0
 
         writer = SummaryWriter(
             log_dir=args.log_dir + '/' + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime(time.time())))
-
         num_model = 0
         num_bestacc=0
-        for _ in trange(int(args.num_train_epochs), desc="Epoch"):
+        for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
                 print('early_stop......')
                 break
 
-            #tr_loss = 0
-            # epoch_loss = 0
-            # nb_tr_examples, train_steps = 0, 0
+            print(f'---------------- Epoch: {epoch + 1:02} ----------')
+
+            epoch_loss = 0
+            all_preds = np.array([], dtype=int)
+            all_labels = np.array([], dtype=int)
+            train_steps = 0
 
             for step, batch in enumerate(tqdm(train_dataloader, ncols=50, desc="Iteration")):#新增ncols，进度条长度。默认是10
 
@@ -537,7 +541,10 @@ def main():
                 batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids = batch
                 #新增结束---
-                loss = model(input_ids, segment_ids, input_mask, label_ids)
+                #loss = model(input_ids, segment_ids, input_mask, label_ids)
+                logits = model(input_ids, segment_ids, input_mask, labels=None)
+                loss=criterion(logits, label_ids)
+
                 if n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.fp16 and args.loss_scale != 1.0:
@@ -546,17 +553,21 @@ def main():
                     loss = loss * args.loss_scale
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
-                # tr_loss += loss.item()#epoch_loss
-                # nb_tr_examples += input_ids.size(0)#没用
 
-                #train_steps += 1
+                train_steps += 1
 
                 if args.fp16:
                     optimizer.backward(loss)
                 else:
                     loss.backward()
 
-                #epoch_loss += loss.item()
+                # 用于画图和分析的数据
+                epoch_loss += loss.item()
+                preds = logits.detach().cpu().numpy()
+                outputs = np.argmax(preds, axis=1)
+                all_preds = np.append(all_preds, outputs)
+                label_ids = label_ids.to('cpu').numpy()
+                all_labels = np.append(all_labels, label_ids)
 
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     # modify learning rate with special warm up BERT uses
@@ -567,11 +578,32 @@ def main():
                     optimizer.zero_grad()
                     global_step += 1
 
-                    #新增dev数据集调参
+                    #新增dev数据集调参--global_step是print_step的倍数才执行下面的
                     if global_step % args.print_step == 0 and global_step != 0:
                         num_model += 1
-                        #train_loss = epoch_loss / train_steps
-                        dev_acc,_,_,_ = evaluate(model, dev_dataloader, device, args.label_list)
+                        train_loss = epoch_loss / train_steps
+                        train_acc, train_report = classifiction_metric(all_preds, all_labels, args.label_list)
+                        dev_loss, dev_acc, dev_report, _ , _ = evaluate(model, dev_dataloader, criterion, device, args.label_list)
+
+                        c = global_step // args.print_step
+                        writer.add_scalar("loss/train", train_loss, c)
+                        writer.add_scalar("loss/dev", dev_loss, c)
+
+                        writer.add_scalar("acc/train", train_acc, c)
+                        writer.add_scalar("acc/dev", dev_acc, c)
+
+                        for label in args.label_list:
+                            writer.add_scalar(label + "_" + "f1/train", train_report[label]['f1-score'], c)
+                            writer.add_scalar(label + "_" + "f1/dev",
+                                              dev_report[label]['f1-score'], c)
+
+                        print_list = ['macro', 'weighted']
+                        for label in print_list:
+                            writer.add_scalar(label + "_avg_" +"f1/train",
+                                              train_report[label+' avg']['f1-score'], c)
+                            writer.add_scalar(label + "_avg_" + "f1/dev",
+                                              dev_report[label+' avg']['f1-score'], c)
+
                         # 以 acc 取优
                         if dev_acc > best_acc:
                             num_bestacc += 1
@@ -586,26 +618,16 @@ def main():
                         else:
                             early_stop_times += 1
 
-            #---------------------------------------------
-        #     TrainLoss.append(epoch_loss/train_steps)#这个咋整
-        #
-        # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'wb') as f:
-        #     pickle.dump(TrainLoss, f)
-
         with open(output_eval_file, "a") as writer:###
             writer.write("\t\n***** Ending dev *****bert-sem\t\n")
             writer.write("  global_step : %d\t\n" % global_step)
             writer.write("  num_model : %d\t\n" % num_model)
             writer.write("  num_bestacc : %d\t\n" % num_bestacc)
 
-        # print('打印global_step：'+str(global_step))
-        # print('打印num_model:'+str(num_model))
-        # print('打印num_bestacc:'+str(num_bestacc))
+    writer.close()
 
     if args.do_eval:
         text_li=[]
-        # with open(os.path.join(args.output_dir, "train_loss.pkl"), 'rb') as f:
-        #     TrainLoss = pickle.load(f)
 
         # dataframe保存带标签的预测文件ntest_label.tsv,格式：id,text,label,predict_label
         df = pd.DataFrame(columns=['text', 'label', 'predict_label'])
@@ -637,12 +659,9 @@ def main():
 
         output_eval_file = os.path.join(args.output_dir, "result.txt")
 
-        #for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
-        #train_loss = TrainLoss[epoch]
         output_model_file = os.path.join(args.output_dir, "_pytorch_model.bin")
         model_state_dict = torch.load(output_model_file)
-        # model = BertForSequenceClassificationSpanMask.from_pretrained(args.bert_model, state_dict=model_state_dict,
-        #                                                       num_labels=5)###改
+
         model = BertForSequenceClassification.from_pretrained(args.bert_model, state_dict=model_state_dict,
                                                               num_labels=5)
         model.to(device)
@@ -650,45 +669,8 @@ def main():
 
         print("=======================")
         print("test_total...")
-        '''        
-        model.eval()
-        eval_loss, eval_accuracy = 0, 0
-        nb_eval_steps, nb_eval_examples = 0, 0
 
-        label_li=[]
-        predict_label_li=[]
-        for input_ids, input_mask, segment_ids, label_ids in eval_dataloader:
-            input_ids = input_ids.to(device)
-            input_mask = input_mask.to(device)
-            segment_ids = segment_ids.to(device)
-            label_ids = label_ids.to(device)
-
-            with torch.no_grad():
-                tmp_eval_loss = model(input_ids, segment_ids, input_mask, label_ids)
-                logits = model(input_ids, segment_ids, input_mask)
-
-            logits = logits.detach().cpu().numpy()
-            label_ids = label_ids.to('cpu').numpy()
-
-            tmp_eval_accuracy = accuracy(logits, label_ids)#一个eval_batch中预测对的个数,均为0-4
-
-            label_li.append(label_ids.tolist())
-            predict_label_li.append(np.argmax(logits,axis=1).tolist())
-
-            eval_loss += tmp_eval_loss.mean().item()
-            eval_accuracy += tmp_eval_accuracy
-
-            nb_eval_examples += input_ids.size(0)
-            nb_eval_steps += 1
-
-        df['predict_label']=sum(predict_label_li,[])
-        df['label']=sum(label_li,[])#这个label_li是标签减去1，即索引的列表。sum这个函数是将二维列表变一维列表
-        df.to_csv("ntest_bert_label.tsv",sep='\t')
-        macro_f1 = metrics.f1_score(sum(predict_label_li,[]),sum(label_li,[]),labels=[0,1,2,3,4], average='macro')
-        eval_loss = eval_loss / nb_eval_steps
-        eval_accuracy = eval_accuracy / nb_eval_examples
-        '''
-        eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, eval_dataloader, device, args.label_list)
+        _, eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, eval_dataloader, criterion, device, args.label_list)
 
         df['predict_label'] = all_preds
         df['label'] = all_labels
