@@ -18,7 +18,6 @@
 #transformers的各种模型，bert，roberta
 from __future__ import absolute_import, division, print_function
 import pandas as pd
-import time
 import argparse
 import logging
 import os
@@ -27,6 +26,8 @@ from tqdm import tqdm, trange
 import numpy as np
 import torch
 from torch.utils.data import (DataLoader,TensorDataset)
+from tensorboardX import SummaryWriter
+import time
 
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification
@@ -52,23 +53,28 @@ def classifiction_metric(preds, labels, label_list):
     #digits：int，输出浮点值的位数．
     return acc, report
 
-def evaluate(model, dataloader, device, label_list):
+def evaluate(model, dataloader,criterion, device, label_list):
     model.eval()
     all_preds = np.array([], dtype=int)
     all_labels = np.array([], dtype=int)
+    epoch_loss = 0
 
     for batch in dataloader:
         with torch.no_grad():
             out2 = model(batch[0].to(device), token_type_ids=None, attention_mask=(batch[0] > 0).to(device))#不需要loss，所以label=None
+        label_ids = batch[1].to(device)
         logits = out2[0]
+        loss = criterion(logits.view(-1, len(label_list)), label_ids.view(-1))
         preds = logits.detach().cpu().numpy()
         outputs = np.argmax(preds, axis=1)
         all_preds = np.append(all_preds, outputs)
+
         label_ids = batch[1].to('cpu').numpy()
         all_labels = np.append(all_labels, label_ids)
 
+        epoch_loss += loss.mean().item()
     acc, report = classifiction_metric(all_preds, all_labels, label_list)
-    return acc, report, all_preds, all_labels
+    return epoch_loss / len(dataloader),acc, report, all_preds, all_labels
 
 
 def main():
@@ -180,11 +186,17 @@ def main():
     parser.add_argument("--predict_test_file",
                         default='ntest_sg_label.tsv',
                         type=str)
+    parser.add_argument("--log_dir",
+                        default="log_dir",
+                        type=str,
+                        help="日志目录，主要用于 tensorboard 分析")
+
 
     args = parser.parse_args()
     logger.info(args)
     output_eval_file = os.path.join(args.output_dir, args.output_file)
     os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(args.log_dir, exist_ok=True)#如果已经存在，不抛出异常
 
     with open(output_eval_file, "w") as writer:
         writer.write("%s\t\n" % args)
@@ -274,6 +286,9 @@ def main():
         all_input_ids = torch.cat(all_input_ids, dim=0)
         return all_input_ids
 
+    criterion = torch.nn.CrossEntropyLoss()#加了torch
+    criterion = criterion.to(device)
+
     if args.do_train:
         # Create the data loader
         train_text_values = df_train['sentence'].values
@@ -317,13 +332,24 @@ def main():
         global_step = 0
         best_acc = 0
         early_stop_times = 0
+
+        writer = SummaryWriter(
+            log_dir=args.log_dir + '/' + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime(time.time())))
+
         num_model = 0
         num_bestacc=0
-        for _ in trange(int(args.num_train_epochs), desc="Epoch"):
+        for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
 
             if early_stop_times >= args.early_stop:
                 print('early_stop......')
                 break
+
+            print(f'---------------- Epoch: {epoch + 1:02} ----------')
+
+            epoch_loss = 0
+            all_preds = np.array([], dtype=int)
+            all_labels = np.array([], dtype=int)
+            train_steps = 0
 
             for step, batch in enumerate(tqdm(train_dataloader, ncols=50, desc="Iteration")):#新增ncols，进度条长度。默认是10
 
@@ -347,11 +373,21 @@ def main():
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
 
+                train_steps += 1
+
                 # 2.2 back propagation
                 if args.fp16:
                     optimizer.backward(loss)
                 else:
                     loss.backward()## 反向传播求解梯度
+
+                # 用于画图和分析的数据
+                epoch_loss += loss.item()
+                preds = logits.detach().cpu().numpy()
+                outputs = np.argmax(preds, axis=1)
+                all_preds = np.append(all_preds, outputs)
+                label_ids = batch[1].to('cpu').numpy()
+                all_labels = np.append(all_labels, label_ids)
 
                 # 3. 多次循环步骤1-2，不清空梯度，使梯度累加在已有梯度上 update parameters of net
                 #梯度累加了一定次数后，先optimizer.step() 根据累计的梯度更新网络参数，然后optimizer.zero_grad() 清空过往梯度，为下一波梯度累加做准备
@@ -365,7 +401,29 @@ def main():
                     #新增dev数据集调参
                     if global_step % args.print_step == 0 and global_step != 0:
                         num_model += 1
-                        dev_acc,_,_,_ = evaluate(model, dev_dataloader, device, args.label_list)
+                        train_loss = epoch_loss / train_steps
+                        train_acc, train_report = classifiction_metric(all_preds, all_labels, args.label_list)
+                        dev_loss, dev_acc, dev_report, _ , _ = evaluate(model, dev_dataloader, criterion, device, args.label_list)
+
+                        c = global_step // args.print_step
+                        writer.add_scalar("loss/train", train_loss, c)
+                        writer.add_scalar("loss/dev", dev_loss, c)
+
+                        writer.add_scalar("acc/train", train_acc, c)
+                        writer.add_scalar("acc/dev", dev_acc, c)
+
+                        for label in args.label_list:
+                            writer.add_scalar(label + "_" + "f1/train", train_report[label]['f1-score'], c)
+                            writer.add_scalar(label + "_" + "f1/dev",
+                                              dev_report[label]['f1-score'], c)
+
+                        print_list = ['macro', 'weighted']
+                        for label in print_list:
+                            writer.add_scalar(label + "_avg_" +"f1/train",
+                                              train_report[label+' avg']['f1-score'], c)
+                            writer.add_scalar(label + "_avg_" + "f1/dev",
+                                              dev_report[label+' avg']['f1-score'], c)
+
                         # 以 acc 取优
                         if dev_acc > best_acc:
                             num_bestacc += 1
@@ -414,7 +472,7 @@ def main():
 
         print("=======================")
         print("test_total...")
-        eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, pred_dataloader, device, args.label_list)
+        _,eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, pred_dataloader,criterion, device, args.label_list)
 
         df['predict_label'] = all_preds
         df['label'] = all_labels
