@@ -72,6 +72,7 @@ def evaluate(model, dataloader,criterion, device, label_list):
         label_ids = batch[1].to('cpu').numpy()
         all_labels = np.append(all_labels, label_ids)
 
+        epoch_loss += loss.mean().item()
     acc, report = classifiction_metric(all_preds, all_labels, label_list)
     return epoch_loss / len(dataloader),acc, report, all_preds, all_labels
 
@@ -385,7 +386,7 @@ def main():
                 preds = logits.detach().cpu().numpy()
                 outputs = np.argmax(preds, axis=1)
                 all_preds = np.append(all_preds, outputs)
-                label_ids = label_ids.to('cpu').numpy()
+                label_ids = batch[1].to('cpu').numpy()
                 all_labels = np.append(all_labels, label_ids)
 
                 # 3. 多次循环步骤1-2，不清空梯度，使梯度累加在已有梯度上 update parameters of net
