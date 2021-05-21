@@ -1598,12 +1598,6 @@ class BertForSemSpanMask(BertPreTrainedModel):
         span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
         w = F.softmax(self.w)
 
-        #multihead_attn(Q，K，V)---第三种（V = K & Q )互注意力---31
-        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
-        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
-        attn_output=torch.cat([attn_output1,attn_output2],2)
-        sequence_output = self.ddd(attn_output)#这里------损失多？？？
-        pooled_output = self.pooler(sequence_output)
 
         '''
         #31不用他的池化 --少一个全连接dense--31np
