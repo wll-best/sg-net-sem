@@ -1687,7 +1687,7 @@ class BertForSemSpanMask(BertPreTrainedModel):
         sequence_output=sequence_output[:, 0]
         pooled_output = self.activation(sequence_output) 
         
-        #第三种对调前两个参数---33
+        #33
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
         attn_output2, attn_output_weights2 = self.multihead_attn(sequence_output, span_sequence_output,  span_sequence_output)
         attn_output=torch.cat([attn_output1,attn_output2],2)
@@ -1715,7 +1715,32 @@ class BertForSemSpanMask(BertPreTrainedModel):
         attn_output=self.gamma * (w[0] * attn_output1 + w[1] * attn_output2)
         pooled_output = self.pooler(attn_output)
         
+        #33不用他的池化 --少一个全连接dense--用他的加法--33a_np
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(sequence_output, span_sequence_output,  span_sequence_output)
+        attn_output=self.gamma * (w[0] * attn_output1 + w[1] * attn_output2)
+        attn_output=attn_output[:, 0]
+        pooled_output = self.activation(attn_output)
+        
         #34
+        attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output, span_sequence_output,   span_sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)
+        attn_output=torch.cat([attn_output1,attn_output2],2)
+        sequence_output = self.ddd(attn_output)
+        pooled_output = self.pooler(sequence_output)
+        
+        #34anp
+        attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output, span_sequence_output,   span_sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)  
+        attn_output=self.gamma * (w[0] * attn_output1 + w[1] * attn_output2)
+        attn_output=attn_output[:, 0]
+        pooled_output = self.activation(attn_output)      
+        
+        #34abp
+        attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output, span_sequence_output,   span_sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,  span_sequence_output)  
+        attn_output=self.gamma * (w[0] * attn_output1 + w[1] * attn_output2)
+        pooled_output = self.pooler(attn_output)
         '''
 
         ###结束变化
