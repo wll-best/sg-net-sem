@@ -1615,17 +1615,37 @@ class BertForSemSpanMask(BertPreTrainedModel):
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,sequence_output)
         pooled_output = self.pooler(attn_output1)
        
+        #11np
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,sequence_output)
+        sequence_output=sequence_output[:, 0]
+        pooled_output = self.activation(sequence_output)
+       
         #第一种对调前两个参数---12
         attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output,span_sequence_output,span_sequence_output)
         pooled_output = self.pooler(attn_output1)
+        
+        #12np
+        attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output,span_sequence_output,span_sequence_output)
+        sequence_output=sequence_output[:, 0]
+        pooled_output = self.activation(sequence_output)
 
         #multihead_attn(Q，K，V)---第二种（V = Q）：一个注意力att2---21
         attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,span_sequence_output)
         pooled_output = self.pooler(attn_output2)
         
+        #21np
+        attn_output2, attn_output_weights2 = self.multihead_attn(span_sequence_output, sequence_output,span_sequence_output)
+        sequence_output=sequence_output[:, 0]
+        pooled_output = self.activation(sequence_output)
+        
         # 第二种对调前两个参数---22
         attn_output2, attn_output_weights2 = self.multihead_attn( sequence_output,span_sequence_output,sequence_output)
         pooled_output = self.pooler(attn_output2)
+        
+        #22np
+        attn_output2, attn_output_weights2 = self.multihead_attn( sequence_output,span_sequence_output,sequence_output)
+        sequence_output=sequence_output[:, 0]
+        pooled_output = self.activation(sequence_output)
 
         #multihead_attn(Q，K，V)---第三种（V = K & Q )互注意力---31
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,  sequence_output)
