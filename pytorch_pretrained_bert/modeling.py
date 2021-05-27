@@ -1603,8 +1603,14 @@ class BertForSemSpanMask(BertPreTrainedModel):
         #拼接c
         sequence_output=torch.cat([sequence_output,span_sequence_output],2)
         sequence_output=self.ddd(sequence_output)
-        sequence_output = self.dropout(sequence_output)###
+        ###sequence_output = self.dropout(sequence_output)###
         pooled_output = self.pooler(sequence_output)
+        
+        #cnp
+        sequence_output=torch.cat([sequence_output,span_sequence_output],2)
+        sequence_output=self.ddd(sequence_output)
+        sequence_output=sequence_output[:, 0]
+        pooled_output = self.activation(sequence_output)
         
         #multihead_attn(Q，K，V)--第一种（V = K）：一个注意力att1---11
         attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,sequence_output)
