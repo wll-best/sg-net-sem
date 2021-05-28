@@ -209,12 +209,12 @@ if __name__ == "__main__":
     # chgt('dev.tsv', 'dev_t.tsv')
     #semdata_split('sem_t.tsv','ntrain.tsv','ndev.tsv','ntest.tsv')
 
-    # ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
-    #                   'ntest_label.tsv')
+    ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
+                      'F:/01myex/roberta_bert/ntest_sg_label.tsv')
 
     #chg_lal('lal_sgnet_ntrain_0.json','lal_sgnet_ntrain.json')
-    find_not_eq('lal_sgnet_ntrain_1.json')
-    print('-------dev--------')
-    find_not_eq('lal_sgnet_ndev_1.json')
-    print('-------test--------')
-    find_not_eq('lal_sgnet_ntest_1.json')
+    # find_not_eq('lal_sgnet_ntrain_1.json')
+    # print('-------dev--------')
+    # find_not_eq('lal_sgnet_ndev_1.json')
+    # print('-------test--------')
+    # find_not_eq('lal_sgnet_ntest_1.json')
