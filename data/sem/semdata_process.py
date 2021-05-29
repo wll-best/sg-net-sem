@@ -191,6 +191,119 @@ def find_not_eq(input):
             print(pred_type[i],len(pred_type[i]))
     print('wrong number'+str(wn))
 
+def roc_sem(ntest):
+
+
+    # 引入必要的库
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from itertools import cycle
+    from sklearn import svm, datasets
+    from sklearn.metrics import roc_curve, auc
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import label_binarize
+    from sklearn.multiclass import OneVsRestClassifier
+    from numpy import interp
+
+    # 加载数据
+    lines = []
+    true_label_li = []
+    predict_label_li = []
+    with open(ntest, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f, delimiter="\t")
+        for line in reader:
+            lines.append(line)
+        for (i, line) in enumerate(lines):
+            if i == 0:
+                continue
+            true_label_li.append(line[2])
+            predict_label_li.append(line[3])
+
+
+    true_label_array = np.array(true_label_li)#List转numpy.array
+    # 将标签二值化
+    y = label_binarize(true_label_array, classes=[0, 1, 2, 3, 4])
+
+    predict_label_array = np.array(predict_label_li)#List转numpy.array
+
+    # 设置种类
+    n_classes = y.shape[1]
+
+    # 训练模型并预测
+
+    y_score = classifier.fit(X_train, y_train).decision_function(X_test)
+
+    # 计算每一类的ROC
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # Compute micro-average ROC curve and ROC area（方法二）
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+
+    # Compute macro-average ROC curve and ROC area（方法一）
+    # First aggregate all false positive rates
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(n_classes):
+        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+    # Finally average it and compute AUC
+    mean_tpr /= n_classes
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+    # Plot all ROC curves
+    lw = 2
+    plt.figure()
+    plt.plot(fpr["micro"], tpr["micro"],
+             label='micro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["micro"]),
+             color='deeppink', linestyle=':', linewidth=4)
+
+    plt.plot(fpr["macro"], tpr["macro"],
+             label='macro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["macro"]),
+             color='navy', linestyle=':', linewidth=4)
+
+    colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+    for i, color in zip(range(n_classes), colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                 label='ROC curve of class {0} (area = {1:0.2f})'
+                       ''.format(i, roc_auc[i]))
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Some extension of Receiver operating characteristic to multi-class')
+    plt.legend(loc="lower right")
+    plt.show()
+    '''
+    lines = []
+    true_label_li = []
+    predict_label_li = []
+    with open(ntest, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f, delimiter="\t")
+        for line in reader:
+            lines.append(line)
+        for (i, line) in enumerate(lines):
+            if i == 0:
+                continue
+            true_label_li.append(line[2])
+            predict_label_li.append(line[3])
+
+    print(true_label_li)
+    print(len(true_label_li))
+    print(len(predict_label_li))
+    '''
+
 '''
 数据集说明：
 #没打乱顺序
@@ -209,8 +322,8 @@ if __name__ == "__main__":
     # chgt('dev.tsv', 'dev_t.tsv')
     #semdata_split('sem_t.tsv','ntrain.tsv','ndev.tsv','ntest.tsv')
 
-    ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
-                      'F:/01myex/roberta_bert/ntest_sg_label.tsv')
+    # ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
+    #                   'F:/01myex/1开头/11np/ntest_sg_label (2).tsv')
 
     #chg_lal('lal_sgnet_ntrain_0.json','lal_sgnet_ntrain.json')
     # find_not_eq('lal_sgnet_ntrain_1.json')
@@ -218,3 +331,5 @@ if __name__ == "__main__":
     # find_not_eq('lal_sgnet_ndev_1.json')
     # print('-------test--------')
     # find_not_eq('lal_sgnet_ntest_1.json')
+
+    roc_sem('ntest_label.tsv')
