@@ -280,7 +280,7 @@ def roc_sem(labelfile,logitsfile):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC curve --- Roberta')#Syntax-BERT Roberta
+    plt.title('ROC curve --- BERT')#Syntax-BERT Roberta
     plt.legend(loc="lower right")
     plt.show()
 
@@ -400,4 +400,4 @@ if __name__ == "__main__":
     # print('-------test--------')
     # find_not_eq('lal_sgnet_ntest_1.json')
     #roc_iris()
-    roc_sem('ntest_sg_label_rob.tsv','all_logits_rob.txt')
+    roc_sem('ntest_sg_label_bert.tsv','all_logits_bert.txt')
