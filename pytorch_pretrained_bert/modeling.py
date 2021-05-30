@@ -37,8 +37,9 @@ import numpy as np###
 
 logger = logging.getLogger(__name__)
 ##后两个model是新增的
+#'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz",
 PRETRAINED_MODEL_ARCHIVE_MAP = {
-    'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz",
+    'bert-base-uncased': "./bert-base-uncased",
     'bert-large-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased.tar.gz",
     'bert-base-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased.tar.gz",
     'bert-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased.tar.gz",
@@ -1598,6 +1599,9 @@ class BertForSemSpanMask(BertPreTrainedModel):
         span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
         w = F.softmax(self.w)
 
+        #第一种对调前两个参数---12
+        attn_output1, attn_output_weights1 = self.multihead_attn(sequence_output,span_sequence_output,span_sequence_output)
+        pooled_output = self.pooler(attn_output1)
 
         '''        
         #拼接c
