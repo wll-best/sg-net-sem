@@ -29,6 +29,8 @@ from torch.utils.data import (DataLoader,TensorDataset)
 from tensorboardX import SummaryWriter
 import time
 
+import torch.nn.functional as F
+
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification
 
@@ -57,6 +59,7 @@ def evaluate(model, dataloader,criterion, device, label_list):
     model.eval()
     all_preds = np.array([], dtype=int)
     all_labels = np.array([], dtype=int)
+    all_logits = np.array([], dtype=int)#每种分类的可能性数组
     epoch_loss = 0
 
     for batch in dataloader:
@@ -66,6 +69,9 @@ def evaluate(model, dataloader,criterion, device, label_list):
         logits = out2[0]
         loss = criterion(logits.view(-1, len(label_list)), label_ids.view(-1))
         preds = logits.detach().cpu().numpy()
+
+        all_logits=np.append(all_logits,F.softmax(logits.detach().cpu(),dim=1))#每种分类的可能性数组
+
         outputs = np.argmax(preds, axis=1)
         all_preds = np.append(all_preds, outputs)
 
@@ -74,7 +80,7 @@ def evaluate(model, dataloader,criterion, device, label_list):
 
         epoch_loss += loss.mean().item()
     acc, report = classifiction_metric(all_preds, all_labels, label_list)
-    return epoch_loss / len(dataloader),acc, report, all_preds, all_labels
+    return epoch_loss / len(dataloader),acc, report, all_logits, all_preds, all_labels
 
 
 def main():
@@ -403,7 +409,7 @@ def main():
                         num_model += 1
                         train_loss = epoch_loss / train_steps
                         train_acc, train_report = classifiction_metric(all_preds, all_labels, args.label_list)
-                        dev_loss, dev_acc, dev_report, _ , _ = evaluate(model, dev_dataloader, criterion, device, args.label_list)
+                        dev_loss, dev_acc, dev_report, _, _, _ = evaluate(model, dev_dataloader, criterion, device, args.label_list)
 
                         c = global_step // args.print_step
                         writer.add_scalar("loss/train", train_loss, c)
@@ -472,7 +478,7 @@ def main():
 
         print("=======================")
         print("test_total...")
-        _,eval_accuracy, eval_report, all_preds, all_labels = evaluate(model, pred_dataloader,criterion, device, args.label_list)
+        _,eval_accuracy, eval_report, all_logits, all_preds, all_labels = evaluate(model, pred_dataloader,criterion, device, args.label_list)
 
         df['predict_label'] = all_preds
         df['label'] = all_labels
@@ -495,6 +501,7 @@ def main():
                 writer.write("%s = %s\t" % (key, str(result[key])))
             writer.write("\t\n")
 
+        np.savetxt(args.output_dir+'/all_logits_sg.txt', all_logits.reshape(-1,5))
 
 if __name__ == "__main__":
     main()

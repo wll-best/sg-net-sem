@@ -890,7 +890,7 @@ def main():
                 writer.write("%s = %s\t" % (key, str(result[key])))
             writer.write("\t\n")
 
-        np.savetxt(args.output_dir+'/all_logits.txt', all_logits.reshape(-1,5))
+        np.savetxt(args.output_dir+'/all_logits_sg.txt', all_logits.reshape(-1,5))
 
 
 if __name__ == "__main__":
