@@ -269,18 +269,18 @@ def roc_sem(labelfile,logitsfile):
                    ''.format(roc_auc["macro"]),
              color='navy', linestyle=':', linewidth=4)
 
-    colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
-    for i, color in zip(range(n_classes), colors):
-        plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-                 label='ROC curve of class {0} (area = {1:0.2f})'
-                       ''.format(i, roc_auc[i]))
+    # colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+    # for i, color in zip(range(n_classes), colors):
+    #     plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+    #              label='ROC curve of class {0} (area = {1:0.2f})'
+    #                    ''.format(i, roc_auc[i]))
 
     plt.plot([0, 1], [0, 1], 'k--', lw=lw)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC曲线---')
+    plt.title('ROC curve --- Roberta')#Syntax-BERT Roberta
     plt.legend(loc="lower right")
     plt.show()
 
@@ -400,4 +400,4 @@ if __name__ == "__main__":
     # print('-------test--------')
     # find_not_eq('lal_sgnet_ntest_1.json')
     #roc_iris()
-    roc_sem('F:/Downloads/ntest_sg_label.tsv','F:/Downloads/all_logits.txt')
+    roc_sem('ntest_sg_label_rob.tsv','all_logits_rob.txt')
