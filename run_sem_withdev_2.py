@@ -779,8 +779,8 @@ def main():
                         writer.add_scalar("loss/train", train_loss, c)
                         writer.add_scalar("loss/dev", dev_loss, c)
 
-                        writer.add_scalar("acc/train", train_acc, c)
-                        writer.add_scalar("acc/dev", dev_acc, c)
+                        writer.add_scalar("micro_f1/train", train_acc, c)##acc/train
+                        writer.add_scalar("micro_f1/dev", dev_acc, c)##acc/dev
 
                         for label in args.label_list:
                             writer.add_scalar(label + "_" + "f1/train", train_report[label]['f1-score'], c)
