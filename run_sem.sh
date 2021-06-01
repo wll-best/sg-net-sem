@@ -37,6 +37,8 @@ python3 run_sem_withdev_bert_transf.py \
   --learning_rate 3e-5 \
   --output_dir output_path_roberta3516 \
   --log_dir log_path_roberta3516
+
+
 python3 run_sem_withdev_2.py \
   --bert_model bert-base-uncased \
   --do_train \
@@ -48,8 +50,8 @@ python3 run_sem_withdev_2.py \
   --num_train_epochs 50.0 \
   --max_seq_length 128 \
   --learning_rate 1e-5 \
-  --output_dir output_path_my121np15 \
-  --log_dir log_path_my121np15
+  --output_dir output_path_my11np15n \
+  --log_dir log_path_my11np15n
 python3 run_sem_withdev_2.py \
   --bert_model bert-base-uncased \
   --do_train \
@@ -61,8 +63,8 @@ python3 run_sem_withdev_2.py \
   --num_train_epochs 50.0 \
   --max_seq_length 128 \
   --learning_rate 2e-5 \
-  --output_dir output_path_my121np25 \
-  --log_dir log_path_my121np25
+  --output_dir output_path_my11np25n\
+  --log_dir log_path_my11np25n
 python3 run_sem_withdev_2.py \
   --bert_model bert-base-uncased \
   --do_train \
@@ -74,8 +76,8 @@ python3 run_sem_withdev_2.py \
   --num_train_epochs 50.0 \
   --max_seq_length 128 \
   --learning_rate 3e-5 \
-  --output_dir output_path_my121np35 \
-  --log_dir log_path_my121np35
+  --output_dir output_path_my11np35n \
+  --log_dir log_path_my11np35n
 python3 run_sem_withdev_2.py \
   --bert_model bert-base-uncased \
   --do_train \
@@ -87,8 +89,8 @@ python3 run_sem_withdev_2.py \
   --num_train_epochs 50.0 \
   --max_seq_length 128 \
   --learning_rate 5e-5 \
-  --output_dir output_path_my121np55 \
-  --log_dir log_path_my121np55
+  --output_dir output_path_my11np55n \
+  --log_dir log_path_my11np55n
 python3 run_sem_withdev_2.py \
   --bert_model bert-base-uncased \
   --do_train \
@@ -100,8 +102,8 @@ python3 run_sem_withdev_2.py \
   --num_train_epochs 50.0 \
   --max_seq_length 128 \
   --learning_rate 8e-5 \
-  --output_dir output_path_my121np85 \
-  --log_dir log_path_my121np85
+  --output_dir output_path_my11np85n \
+  --log_dir log_path_my11np85n
 python3 run_sem_withdev_2.py \
   --bert_model bert-base-uncased \
   --do_train \
@@ -113,8 +115,8 @@ python3 run_sem_withdev_2.py \
   --num_train_epochs 50.0 \
   --max_seq_length 128 \
   --learning_rate 1e-4 \
-  --output_dir output_path_my121np14 \
-  --log_dir log_path_my121np14
+  --output_dir output_path_my11np14n \
+  --log_dir log_path_my11np14n
 python3 run_sem_withdev_2.py \
   --bert_model bert-base-uncased \
   --do_train \
@@ -126,8 +128,8 @@ python3 run_sem_withdev_2.py \
   --num_train_epochs 50.0 \
   --max_seq_length 128 \
   --learning_rate 1e-3 \
-  --output_dir output_path_my121np13 \
-  --log_dir log_path_my121np13
+  --output_dir output_path_my11np13n \
+  --log_dir log_path_my11np13n
 
 
 

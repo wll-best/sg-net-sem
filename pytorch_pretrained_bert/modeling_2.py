@@ -1599,6 +1599,11 @@ class BertForSemSpanMask(BertPreTrainedModel):
         span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
         w = F.softmax(self.w)
 
+        #11np
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output,sequence_output)
+        sequence_output=attn_output1[:, 0]
+        pooled_output = self.activation(sequence_output)
+
         '''
         #拼接c
         sequence_output=torch.cat([sequence_output,span_sequence_output],2)
