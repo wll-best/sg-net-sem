@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 python3 run_sem_withdev.py \
   --bert_model bert-base-uncased \
   --do_train \
