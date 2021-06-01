@@ -22,7 +22,7 @@ import pandas as pd
 import argparse
 import csv
 import random
-
+import numpy as np
 from tqdm import tqdm, trange
 
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
