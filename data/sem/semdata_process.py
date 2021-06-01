@@ -382,6 +382,7 @@ sem_t是所有数据，顺序排列
 ntrain/ntest/ndev.tsv-->T
 ntest_label-->T,模型生成的测试集结果
 ntrainss,ntestss-->T,将前面的训练集与验证集整合成现在的训练集，测试集不变
+lal_1是用到的句法树
 '''
 
 if __name__ == "__main__":
