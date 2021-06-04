@@ -238,7 +238,7 @@ def roc_sem(labelfile,logitsfile):
         #print(i,y_test[:, i], y_score[:, i])
         fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
-    #exit()#暂时停！！！！
+
     # Compute micro-average ROC curve and ROC area（方法二）
     fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
@@ -280,7 +280,7 @@ def roc_sem(labelfile,logitsfile):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC curve --- RoBERTa')#Syntax-BERT RoBERTa
+    plt.title('ROC curve --- BERT')# RoBERTa BERT Syntax-BERT
     plt.legend(loc="lower right")
     plt.show()
 
@@ -392,8 +392,11 @@ if __name__ == "__main__":
     #semdata_split('sem_t.tsv','ntrain.tsv','ndev.tsv','ntest.tsv')
 
     # ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
-    #                   'F:/01myex/1开头/11np/ntest_sg_label (2).tsv')
-
+    #                   'F:/01myex/bert_pi8/ntest_sg_label (10).tsv')#bert7e-5
+    # ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
+    #                   'F:/01myex/roberta_sgbert/ntest_sg_label.tsv')#roberta3e-5
+    # ntest_label_split('Restaurants_All_14_bdf.txt','Restaurants_All_15_bdf.txt','Restaurants_All_16_bdf.txt',
+    #                   'F:/01myex/33开头/33-1abp/ntest_sg_label55.tsv')#sg5e-5
     #chg_lal('lal_sgnet_ntrain_0.json','lal_sgnet_ntrain.json')
     # find_not_eq('lal_sgnet_ntrain_1.json')
     # print('-------dev--------')
@@ -401,4 +404,7 @@ if __name__ == "__main__":
     # print('-------test--------')
     # find_not_eq('lal_sgnet_ntest_1.json')
     #roc_iris()
-    roc_sem('ntest_sg_label_rob.tsv','all_logits_rob.txt')
+    #改表头-------
+    roc_sem('F:/01myex/bert_pi8/ntest_sg_label (10).tsv','F:/01myex/bert_pi8/all_logits_bert (10).txt')#bert
+    # roc_sem('ntest_sg_label_rob.tsv','all_logits_rob.txt')#roberta
+    #roc_sem('F:/01myex/33开头/33-1abp/ntest_sg_label55.tsv','F:/01myex/33开头/33-1abp/all_logits_sg55.txt')#sg
