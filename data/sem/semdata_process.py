@@ -217,11 +217,11 @@ def roc_sem(labelfile,logitsfile):
                 continue
             true_label_li.append(line[2])
             #predict_label_li.append(line[3])
-
+        print(true_label_li)
     true_label_array = np.array(true_label_li)#List转numpy.array
 
-    # 将标签二值化
-    y_test = label_binarize(true_label_array, classes=['0','1','2','3','4'])
+    # 将标签二值化#!!!cnn:['1','2','3','4','5']-----bert:['0','1','2','3','4']!!!
+    y_test = label_binarize(true_label_array, classes=['1','2','3','4','5'])
     #predict_label_array = np.array(predict_label_li)#List转numpy.array
 
     # 设置种类
@@ -280,7 +280,7 @@ def roc_sem(labelfile,logitsfile):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC curve --- BERT')# RoBERTa BERT Syntax-BERT
+    plt.title('ROC curve --- ')# RoBERTa BERT Syntax-BERT BERT
     plt.legend(loc="lower right")
     plt.show()
 
@@ -405,6 +405,7 @@ if __name__ == "__main__":
     # find_not_eq('lal_sgnet_ntest_1.json')
     #roc_iris()
     #改表头-------
-    roc_sem('F:/01myex/bert_pi8/ntest_sg_label (10).tsv','F:/01myex/bert_pi8/all_logits_bert (10).txt')#bert
+    #roc_sem('F:/01myex/bert_pi8/ntest_sg_label (10).tsv','F:/01myex/bert_pi8/all_logits_bert (10).txt')#bert
     # roc_sem('ntest_sg_label_rob.tsv','all_logits_rob.txt')#roberta
     #roc_sem('F:/01myex/33开头/33-1abp/ntest_sg_label55.tsv','F:/01myex/33开头/33-1abp/all_logits_sg55.txt')#sg
+    roc_sem('F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/ntest_cnn_label.tsv','F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/all_logits_cnn.txt')#cnn
