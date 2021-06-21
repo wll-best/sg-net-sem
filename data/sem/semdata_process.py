@@ -217,7 +217,7 @@ def roc_sem(labelfile,logitsfile):
                 continue
             true_label_li.append(line[2])
             #predict_label_li.append(line[3])
-        print(true_label_li)
+        #print(true_label_li)
     true_label_array = np.array(true_label_li)#List转numpy.array
 
     # 将标签二值化#!!!cnn:['1','2','3','4','5']-----bert:['0','1','2','3','4']!!!
