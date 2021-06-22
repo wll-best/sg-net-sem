@@ -280,7 +280,7 @@ def roc_sem(labelfile,logitsfile):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC curve --- ')# RoBERTa BERT Syntax-BERT BERT
+    plt.title('ROC curve --- BiGRU ')# RoBERTa BERT Syntax-BERT BERT TextCNN BiLSTM
     plt.legend(loc="lower right")
     plt.show()
 
@@ -408,4 +408,7 @@ if __name__ == "__main__":
     #roc_sem('F:/01myex/bert_pi8/ntest_sg_label (10).tsv','F:/01myex/bert_pi8/all_logits_bert (10).txt')#bert
     # roc_sem('ntest_sg_label_rob.tsv','all_logits_rob.txt')#roberta
     #roc_sem('F:/01myex/33开头/33-1abp/ntest_sg_label55.tsv','F:/01myex/33开头/33-1abp/all_logits_sg55.txt')#sg
-    roc_sem('F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/ntest_bigru_label.tsv','F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/all_logits_bigru.txt')#cnn
+    #roc_sem('F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/ntest_bigru_label.tsv','F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/all_logits_bigru.txt')#cnn
+    #roc_sem('F:/01myex/ntest_cnn_label.tsv','F:/01myex/all_logits_cnn.txt')
+    #roc_sem('F:/01myex/ntest_bilstm_label.tsv', 'F:/01myex/all_logits_bilstm.txt')
+    roc_sem('F:/01myex/ntest_bigru_label.tsv', 'F:/01myex/all_logits_bigru.txt')
