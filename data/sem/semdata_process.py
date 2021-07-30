@@ -221,7 +221,7 @@ def roc_sem(labelfile,logitsfile):
     true_label_array = np.array(true_label_li)#List转numpy.array
 
     # 将标签二值化#!!!cnn:['1','2','3','4','5']-----bert:['0','1','2','3','4']!!!
-    y_test = label_binarize(true_label_array, classes=['1','2','3','4','5'])
+    y_test = label_binarize(true_label_array, classes=['0','1','2','3','4'])
     #predict_label_array = np.array(predict_label_li)#List转numpy.array
 
     # 设置种类
@@ -280,10 +280,114 @@ def roc_sem(labelfile,logitsfile):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC curve --- BiGRU ')# RoBERTa BERT Syntax-BERT BERT TextCNN BiLSTM
+    plt.title('ROC curve ---  ')# RoBERTa BERT Syntax-BERT BERT TextCNN BiLSTM BiGRU
     plt.legend(loc="lower right")
     plt.show()
 
+def roc_sem_micro(labelfile,logitsfile,classes):
+    # 引入必要的库
+    import numpy as np
+
+    from sklearn.metrics import roc_curve, auc
+    from sklearn.preprocessing import label_binarize
+
+    # 加载数据
+    lines = []
+    true_label_li = []
+    with open(labelfile, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f, delimiter="\t")
+        for line in reader:
+            lines.append(line)
+        for (i, line) in enumerate(lines):
+            if i == 0:
+                continue
+            true_label_li.append(line[2])
+    true_label_array = np.array(true_label_li)#List转numpy.array
+    # 将标签classes二值化#!!!cnn:['1','2','3','4','5']-----bert:['0','1','2','3','4']!!!
+    y_test = label_binarize(true_label_array, classes)
+    # 设置种类
+    n_classes = y_test.shape[1]
+    # 训练模型并预测
+    y_score = np.genfromtxt(logitsfile, delimiter=' ', dtype=None)# 将logits.txt文件读入numpy数组
+    # 计算每一类的ROC
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # Compute micro-average ROC curve and ROC area（方法二）
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    return fpr["micro"], tpr["micro"],roc_auc["micro"]
+
+def plt_roc_sem_micro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3):
+    # RoBERTa BERT Syntax-BERT BERT
+    import matplotlib.pyplot as plt
+    # Plot all ROC curves
+    fpr1, tpr1,roc_auc1 = roc_sem_micro(labelfile1,logitsfile1,['0','1','2','3','4'])
+    fpr2, tpr2, roc_auc2 = roc_sem_micro(labelfile2, logitsfile2,['0','1','2','3','4'])
+    fpr3, tpr3, roc_auc3 = roc_sem_micro(labelfile3, logitsfile3,['0','1','2','3','4'])
+    lw = 1.5
+    plt.figure()
+    plt.plot(fpr1, tpr1,
+             label=' BERT (area = {0:0.2f})'
+                   ''.format(roc_auc1),
+             color='cornflowerblue', linestyle=':', linewidth=3)
+    plt.plot(fpr2, tpr2,
+             label='RoBERTa (area = {0:0.2f})'
+                   ''.format(roc_auc2),
+             color='darkorange', linestyle=':', linewidth=3)
+    plt.plot(fpr3, tpr3,
+             label='Syntax-BERT (area = {0:0.2f})'
+                   ''.format(roc_auc3),
+             color='red', linestyle=':', linewidth=3)
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)#反对角线
+
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('micro-average ROC curve')# RoBERTa BERT Syntax-BERT BERT
+    plt.legend(loc="lower right")
+    plt.show()
+
+def plt_roc_sem_micro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4):
+    # TextCNN BiLSTM BiGRU
+    import matplotlib.pyplot as plt
+    # Plot all ROC curves
+    fpr1, tpr1,roc_auc1 = roc_sem_micro(labelfile1,logitsfile1,['1','2','3','4','5'])
+    fpr2, tpr2, roc_auc2 = roc_sem_micro(labelfile2, logitsfile2,['1','2','3','4','5'])
+    fpr3, tpr3, roc_auc3 = roc_sem_micro(labelfile3, logitsfile3,['1','2','3','4','5'])
+    fpr4, tpr4, roc_auc4 = roc_sem_micro(labelfile4, logitsfile4,['0','1','2','3','4'])
+    lw = 1.5
+    plt.figure()
+    plt.plot(fpr1, tpr1,
+             label='CNN (area = {0:0.2f})'
+                   ''.format(roc_auc1),
+             color='forestgreen', linestyle=':', linewidth=3)
+    plt.plot(fpr2, tpr2,
+             label='BiLSTM (area = {0:0.2f})'
+                   ''.format(roc_auc2),
+             color='chocolate', linestyle=':', linewidth=3)
+    plt.plot(fpr3, tpr3,
+             label='BiGRU (area = {0:0.2f})'
+                   ''.format(roc_auc3),
+             color='plum', linestyle=':', linewidth=3)
+    plt.plot(fpr4, tpr4,
+             label='Syntax-BERT (area = {0:0.2f})'
+                   ''.format(roc_auc4),
+             color='red', linestyle=':', linewidth=3)
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)#反对角线
+
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('micro-average ROC curve')# TextCNN BiLSTM BiGRU
+    plt.legend(loc="lower right")
+    plt.show()
 
 def roc_iris():
     # 引入必要的库
@@ -405,10 +509,33 @@ if __name__ == "__main__":
     # find_not_eq('lal_sgnet_ntest_1.json')
     #roc_iris()
     #改表头-------
+    #每种模型的micro-roc和macro-roc
     #roc_sem('F:/01myex/bert_pi8/ntest_sg_label (10).tsv','F:/01myex/bert_pi8/all_logits_bert (10).txt')#bert
-    # roc_sem('ntest_sg_label_rob.tsv','all_logits_rob.txt')#roberta
+    #roc_sem('F:/01myex/roberta_sgbert/ntest_sg_label_rob.tsv','F:/01myex/roberta_sgbert/all_logits_rob.txt')#roberta
     #roc_sem('F:/01myex/33开头/33-1abp/ntest_sg_label55.tsv','F:/01myex/33开头/33-1abp/all_logits_sg55.txt')#sg
+    #以上三种模型的micro-roc
+    # labelfile1='semresult/ntest_sg_label (10).tsv'
+    # logitsfile1='semresult/all_logits_bert (10).txt'
+    # labelfile2='semresult/ntest_sg_label_rob.tsv'
+    # logitsfile2='semresult/all_logits_rob.txt'
+    # labelfile3='semresult/ntest_sg_label55.tsv'
+    # logitsfile3='semresult/all_logits_sg55.txt'
+    #图片存于semresult/microROC_bert等3个.png
+    # plt_roc_sem_micro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3)
+
+
     #roc_sem('F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/ntest_bigru_label.tsv','F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/all_logits_bigru.txt')#cnn
     #roc_sem('F:/01myex/ntest_cnn_label.tsv','F:/01myex/all_logits_cnn.txt')
     #roc_sem('F:/01myex/ntest_bilstm_label.tsv', 'F:/01myex/all_logits_bilstm.txt')
-    roc_sem('F:/01myex/ntest_bigru_label.tsv', 'F:/01myex/all_logits_bigru.txt')
+    #roc_sem('F:/01myex/ntest_bigru_label.tsv', 'F:/01myex/all_logits_bigru.txt')
+    #以上三种模型+ syntax-bert 的micro-roc
+    labelfile1='semresult/ntest_cnn_label.tsv'
+    logitsfile1='semresult/all_logits_cnn.txt'
+    labelfile2='semresult/ntest_bilstm_label.tsv'
+    logitsfile2='semresult/all_logits_bilstm.txt'
+    labelfile3='semresult/ntest_bigru_label.tsv'
+    logitsfile3='semresult/all_logits_bigru.txt'
+    labelfile4='semresult/ntest_sg_label55.tsv'
+    logitsfile4='semresult/all_logits_sg55.txt'
+    #图片存于semresult/microROC_cnn等4个.png
+    plt_roc_sem_micro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4)
