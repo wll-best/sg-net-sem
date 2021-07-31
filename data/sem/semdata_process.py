@@ -193,6 +193,7 @@ def find_not_eq(input):
 
 
 def roc_sem(labelfile,logitsfile):
+    #每个模型的micro/macro-roc
     # 引入必要的库
     import numpy as np
     import matplotlib.pyplot as plt
@@ -284,12 +285,12 @@ def roc_sem(labelfile,logitsfile):
     plt.legend(loc="lower right")
     plt.show()
 
-def roc_sem_micro(labelfile,logitsfile,classes):
+def roc_sem_micro_or_macro(labelfile,logitsfile,classes,micro_or_macro):
     # 引入必要的库
     import numpy as np
-
     from sklearn.metrics import roc_curve, auc
     from sklearn.preprocessing import label_binarize
+    from numpy import interp
 
     # 加载数据
     lines = []
@@ -317,18 +318,35 @@ def roc_sem_micro(labelfile,logitsfile,classes):
         fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
-    # Compute micro-average ROC curve and ROC area（方法二）
-    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
-    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-    return fpr["micro"], tpr["micro"],roc_auc["micro"]
+    if micro_or_macro=='micro':
+        # Compute micro-average ROC curve and ROC area（方法二）
+        fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
+        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+        return fpr["micro"], tpr["micro"], roc_auc["micro"]
+    elif micro_or_macro=='macro':
+        # Compute macro-average ROC curve and ROC area（方法一）
+        # First aggregate all false positive rates
+        all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+        # Then interpolate all ROC curves at this points
+        mean_tpr = np.zeros_like(all_fpr)
+        for i in range(n_classes):
+            mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+        # Finally average it and compute AUC
+        mean_tpr /= n_classes
+        fpr["macro"] = all_fpr
+        tpr["macro"] = mean_tpr
+        roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+        return fpr["macro"], tpr["macro"], roc_auc["macro"]
+    else: print('Must choose micro_or_macro!')
 
-def plt_roc_sem_micro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3):
+
+def plt_roc_sem_micro_or_macro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,micro_or_macro):
     # RoBERTa BERT Syntax-BERT BERT
     import matplotlib.pyplot as plt
     # Plot all ROC curves
-    fpr1, tpr1,roc_auc1 = roc_sem_micro(labelfile1,logitsfile1,['0','1','2','3','4'])
-    fpr2, tpr2, roc_auc2 = roc_sem_micro(labelfile2, logitsfile2,['0','1','2','3','4'])
-    fpr3, tpr3, roc_auc3 = roc_sem_micro(labelfile3, logitsfile3,['0','1','2','3','4'])
+    fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['0','1','2','3','4'],micro_or_macro)
+    fpr2, tpr2, roc_auc2 = roc_sem_micro_or_macro(labelfile2, logitsfile2,['0','1','2','3','4'],micro_or_macro)
+    fpr3, tpr3, roc_auc3 = roc_sem_micro_or_macro(labelfile3, logitsfile3,['0','1','2','3','4'],micro_or_macro)
     lw = 1.5
     plt.figure()
     plt.plot(fpr1, tpr1,
@@ -349,18 +367,21 @@ def plt_roc_sem_micro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,l
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('micro-average ROC curve')# RoBERTa BERT Syntax-BERT BERT
+    if micro_or_macro=='micro':
+        plt.title('micro-average ROC curve')# RoBERTa BERT Syntax-BERT BERT
+    else:
+        plt.title('macro-average ROC curve')# RoBERTa BERT Syntax-BERT BERT
     plt.legend(loc="lower right")
     plt.show()
 
-def plt_roc_sem_micro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4):
+def plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,micro_or_macro):
     # TextCNN BiLSTM BiGRU
     import matplotlib.pyplot as plt
     # Plot all ROC curves
-    fpr1, tpr1,roc_auc1 = roc_sem_micro(labelfile1,logitsfile1,['1','2','3','4','5'])
-    fpr2, tpr2, roc_auc2 = roc_sem_micro(labelfile2, logitsfile2,['1','2','3','4','5'])
-    fpr3, tpr3, roc_auc3 = roc_sem_micro(labelfile3, logitsfile3,['1','2','3','4','5'])
-    fpr4, tpr4, roc_auc4 = roc_sem_micro(labelfile4, logitsfile4,['0','1','2','3','4'])
+    fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['1','2','3','4','5'],micro_or_macro)
+    fpr2, tpr2, roc_auc2 = roc_sem_micro_or_macro(labelfile2, logitsfile2,['1','2','3','4','5'],micro_or_macro)
+    fpr3, tpr3, roc_auc3 = roc_sem_micro_or_macro(labelfile3, logitsfile3,['1','2','3','4','5'],micro_or_macro)
+    fpr4, tpr4, roc_auc4 = roc_sem_micro_or_macro(labelfile4, logitsfile4,['0','1','2','3','4'],micro_or_macro)
     lw = 1.5
     plt.figure()
     plt.plot(fpr1, tpr1,
@@ -385,7 +406,10 @@ def plt_roc_sem_micro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('micro-average ROC curve')# TextCNN BiLSTM BiGRU
+    if micro_or_macro=='micro':
+        plt.title('micro-average ROC curve')# TextCNN BiLSTM BiGRU
+    else:
+        plt.title('macro-average ROC curve')# TextCNN BiLSTM BiGRU
     plt.legend(loc="lower right")
     plt.show()
 
@@ -520,15 +544,17 @@ if __name__ == "__main__":
     # logitsfile2='semresult/all_logits_rob.txt'
     # labelfile3='semresult/ntest_sg_label55.tsv'
     # logitsfile3='semresult/all_logits_sg55.txt'
-    #图片存于semresult/microROC_bert等3个.png
-    # plt_roc_sem_micro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3)
-
+    #micro#图片存于semresult/microROC_bert等3个.png
+    #plt_roc_sem_micro_or_macro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,'micro')
+    #macro#图片存于semresult/macroROC_bert等3个.png
+    #plt_roc_sem_micro_or_macro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,'macro')
 
     #roc_sem('F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/ntest_bigru_label.tsv','F:/a_new_study/lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch/data/sem/all_logits_bigru.txt')#cnn
     #roc_sem('F:/01myex/ntest_cnn_label.tsv','F:/01myex/all_logits_cnn.txt')
     #roc_sem('F:/01myex/ntest_bilstm_label.tsv', 'F:/01myex/all_logits_bilstm.txt')
     #roc_sem('F:/01myex/ntest_bigru_label.tsv', 'F:/01myex/all_logits_bigru.txt')
     #以上三种模型+ syntax-bert 的micro-roc
+
     labelfile1='semresult/ntest_cnn_label.tsv'
     logitsfile1='semresult/all_logits_cnn.txt'
     labelfile2='semresult/ntest_bilstm_label.tsv'
@@ -537,5 +563,7 @@ if __name__ == "__main__":
     logitsfile3='semresult/all_logits_bigru.txt'
     labelfile4='semresult/ntest_sg_label55.tsv'
     logitsfile4='semresult/all_logits_sg55.txt'
-    #图片存于semresult/microROC_cnn等4个.png
-    plt_roc_sem_micro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4)
+    #micro#图片存于semresult/microROC_cnn等4个.png
+    plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,'micro')
+    #macro#图片存于semresult/macroROC_cnn等4个.png
+    plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,'macro')
