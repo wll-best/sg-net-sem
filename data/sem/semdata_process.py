@@ -352,15 +352,15 @@ def plt_roc_sem_micro_or_macro(labelfile1,logitsfile1,labelfile2,logitsfile2,lab
     plt.plot(fpr1, tpr1,
              label=' BERT (area = {0:0.2f})'
                    ''.format(roc_auc1),
-             color='cornflowerblue', linestyle=':', linewidth=3)
+             color='cornflowerblue', linestyle='-.', linewidth=2.5)#cornflowerblue
     plt.plot(fpr2, tpr2,
              label='RoBERTa (area = {0:0.2f})'
                    ''.format(roc_auc2),
-             color='darkorange', linestyle=':', linewidth=3)
+             color='darkorange', linestyle='-', linewidth=2.5)#darkorange
     plt.plot(fpr3, tpr3,
              label='Syntax-BERT (area = {0:0.2f})'
                    ''.format(roc_auc3),
-             color='red', linestyle=':', linewidth=3)
+             color='red', linestyle=':', linewidth=2.5)#red
     plt.plot([0, 1], [0, 1], 'k--', lw=lw)#反对角线
 
     plt.xlim([0.0, 1.0])
@@ -387,15 +387,15 @@ def plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,la
     plt.plot(fpr1, tpr1,
              label='CNN (area = {0:0.2f})'
                    ''.format(roc_auc1),
-             color='forestgreen', linestyle=':', linewidth=3)
+             color='forestgreen', linestyle='--', linewidth=3)
     plt.plot(fpr2, tpr2,
              label='BiLSTM (area = {0:0.2f})'
                    ''.format(roc_auc2),
-             color='chocolate', linestyle=':', linewidth=3)
+             color='chocolate', linestyle='-.', linewidth=3)
     plt.plot(fpr3, tpr3,
              label='BiGRU (area = {0:0.2f})'
                    ''.format(roc_auc3),
-             color='plum', linestyle=':', linewidth=3)
+             color='plum', linestyle='-', linewidth=3)
     plt.plot(fpr4, tpr4,
              label='Syntax-BERT (area = {0:0.2f})'
                    ''.format(roc_auc4),
