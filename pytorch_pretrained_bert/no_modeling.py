@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""PyTorch BERT model."""
+"""PyTorch BERT model.之前的错误文件"""
 ###表示大改结构，##表示小改语句
 from __future__ import absolute_import, division, print_function, unicode_literals
 
