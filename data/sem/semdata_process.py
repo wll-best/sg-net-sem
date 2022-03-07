@@ -440,7 +440,7 @@ def plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,la
 
 
 def plt_roc_sem_micro_or_macro3(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,labelfile5,logitsfile5,micro_or_macro):
-    # TextCNN BiLSTM BiGRU和BERT、BERTCNN
+    # CNN BiLSTM BiGRU和BERT、BERT-CNN
     import matplotlib.pyplot as plt
     # Plot all ROC curves
     fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['1','2','3','4','5'],micro_or_macro)
@@ -485,13 +485,13 @@ def plt_roc_sem_micro_or_macro3(labelfile1,logitsfile1,labelfile2,logitsfile2,la
 
 
 def plt_roc_sem_micro_or_macro4(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,labelfile5,logitsfile5,micro_or_macro):
-    # BERT、BERT + CNN、BERT + BiLSTM、BERT + ATT、BERT + RCNN
+    # BERT、BERT-CNN、BERT-BiLSTM、BERT-ATT、BERT-RCNN
     import matplotlib.pyplot as plt
     # Plot all ROC curves
-    fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['1','2','3','4','5'],micro_or_macro)
-    fpr2, tpr2, roc_auc2 = roc_sem_micro_or_macro(labelfile2, logitsfile2,['1','2','3','4','5'],micro_or_macro)
-    fpr3, tpr3, roc_auc3 = roc_sem_micro_or_macro(labelfile3, logitsfile3,['1','2','3','4','5'],micro_or_macro)
-    fpr4, tpr4, roc_auc4 = roc_sem_micro_or_macro(labelfile4, logitsfile4,['0','1','2','3','4'],micro_or_macro)
+    fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['0', '1', '2', '3', '4'],micro_or_macro)
+    fpr2, tpr2, roc_auc2 = roc_sem_micro_or_macro(labelfile2, logitsfile2,['0', '1', '2', '3', '4'],micro_or_macro)
+    fpr3, tpr3, roc_auc3 = roc_sem_micro_or_macro(labelfile3, logitsfile3,['0', '1', '2', '3', '4'],micro_or_macro)
+    fpr4, tpr4, roc_auc4 = roc_sem_micro_or_macro(labelfile4, logitsfile4,['0', '1', '2', '3', '4'],micro_or_macro)
     fpr5, tpr5, roc_auc5 = roc_sem_micro_or_macro(labelfile5, logitsfile5, ['0', '1', '2', '3', '4'], micro_or_macro)
 
     lw = 1.5
@@ -630,6 +630,17 @@ ntrainss,ntestss-->T,将前面的训练集与验证集整合成现在的训练�
 lal_1是用到的句法树
 '''
 
+def nfn(modelname,mychoice):
+    #生成文件名字
+    if mychoice=='la':
+        labelfile='semresult/ntest_'+modelname+'_label.tsv'
+        return labelfile
+    elif mychoice=='lo':
+        logitsfile='semresult/all_logits_'+modelname+'.txt'
+        return logitsfile
+    else:
+        print('wrong!')
+
 if __name__ == "__main__":
     # chgt('test.tsv','test_t.tsv')
     # chgt('train.tsv', 'train_t.tsv')
@@ -687,3 +698,24 @@ if __name__ == "__main__":
 
     #一个
     #plt_roc_sem_micro_or_macro_only('ntest_BertOrigin_label.tsv','all_logits_BertOrigin.txt','micro')
+
+
+    #roc3--CNN BiLSTM BiGRU和BERT、BERT-CNN
+    # ----------图片存于semresult/micro_BERTCNN等5个.png
+    plt_roc_sem_micro_or_macro3( nfn('cnn','la'),nfn('cnn','lo'),nfn('bilstm','la'),nfn('bilstm','lo'),
+                                 nfn('bigru', 'la'), nfn('bigru', 'lo'), nfn('bert (10)', 'la'), nfn('bert (10)', 'lo'),
+                                nfn('BertCNN', 'la'), nfn('BertCNN', 'lo'), 'micro')
+    # ----------图片存于semresult/macro_BERTCNN等5个.png
+    plt_roc_sem_micro_or_macro3( nfn('cnn','la'),nfn('cnn','lo'),nfn('bilstm','la'),nfn('bilstm','lo'),
+                                 nfn('bigru', 'la'), nfn('bigru', 'lo'), nfn('bert (10)', 'la'), nfn('bert (10)', 'lo'),
+                                nfn('BertCNN', 'la'), nfn('BertCNN', 'lo'), 'macro')
+
+    #4-BERT、BERT-CNN、BERT-BiLSTM、BERT-ATT、BERT-RCNN
+    # ----------图片存于semresult/micro_BERT分类器等5个.png
+    plt_roc_sem_micro_or_macro4( nfn('bert (10)','la'),nfn('bert (10)','lo'),nfn('BertCNN','la'),nfn('BertCNN','lo'),
+                                 nfn('BERTBiLSTM', 'la'), nfn('BERTBiLSTM', 'lo'), nfn('BERTATT', 'la'), nfn('BERTATT', 'lo'),
+                                nfn('BERTRCNN', 'la'), nfn('BERTRCNN', 'lo'), 'micro')
+    # ----------图片存于semresult/macro_BERT分类器等5个.png
+    plt_roc_sem_micro_or_macro4( nfn('bert (10)','la'),nfn('bert (10)','lo'),nfn('BertCNN','la'),nfn('BertCNN','lo'),
+                                 nfn('BERTBiLSTM', 'la'), nfn('BERTBiLSTM', 'lo'), nfn('BERTATT', 'la'), nfn('BERTATT', 'lo'),
+                                nfn('BERTRCNN', 'la'), nfn('BERTRCNN', 'lo'), 'macro')

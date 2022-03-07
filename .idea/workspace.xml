@@ -3,13 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="c5ac2a21-b47c-40f4-94d3-7131417a576c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/../../bert-sem-pt/bert-sem-pt" beforeDir="false" afterPath="$PROJECT_DIR$/../../bert-sem-pt/bert-sem-pt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/sg-net-sem.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/sg-net-sem.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data/sem/semdata_process.py" beforeDir="false" afterPath="$PROJECT_DIR$/data/sem/semdata_process.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_pretrained_bert/modeling.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_pretrained_bert/modeling.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../../lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/.idea/Text-Classification-Models-Pytorch_cnn.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/.idea/Text-Classification-Models-Pytorch_cnn.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../../lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../../lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch" beforeDir="false" afterPath="$PROJECT_DIR$/../../../lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn/Text-Classification-Models-Pytorch" afterDir="false" />
@@ -63,8 +57,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/data/sem/semdata_process.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="202">
-              <caret line="681" column="47" selection-start-line="681" selection-start-column="47" selection-end-line="681" selection-end-column="47" />
+            <state relative-caret-position="115">
+              <caret line="717" column="43" selection-start-line="717" selection-start-column="43" selection-end-line="717" selection-end-column="43" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
                 <element signature="e#16325#19454#0" />
@@ -196,6 +190,11 @@
               <item name="data" type="462c0819:PsiDirectoryNode" />
               <item name="sem" type="462c0819:PsiDirectoryNode" />
               <item name="semresult" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="sg-net-sem" type="b2602c69:ProjectViewProjectNode" />
+              <item name="sg-net-sem" type="462c0819:PsiDirectoryNode" />
+              <item name="pytorch_pretrained_bert" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="sg-net-sem" type="b2602c69:ProjectViewProjectNode" />
@@ -379,14 +378,13 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="848" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17899604" />
+      <window_info content_ui="combo" id="Project" order="0" weight="0.19286658" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.19832402" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.19832402" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -394,7 +392,7 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32960895" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Terminal" order="10" weight="0.4036313" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="10" visible="true" weight="0.4036313" />
       <window_info anchor="bottom" id="Python Console" order="11" weight="0.16061452" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -466,17 +464,6 @@
         <state>
           <folding>
             <element signature="e#760#842#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/pytorch_pretrained_bert/modeling.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="371">
-          <caret line="1686" column="45" selection-start-line="1686" selection-start-column="45" selection-end-line="1686" selection-end-column="45" />
-          <folding>
-            <element signature="e#753#835#0" expanded="true" />
-            <element signature="e#79143#82328#1" />
           </folding>
         </state>
       </provider>
@@ -746,10 +733,21 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/pytorch_pretrained_bert/modeling.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="338">
+          <caret line="1686" column="45" selection-start-line="1686" selection-start-column="45" selection-end-line="1686" selection-end-column="45" />
+          <folding>
+            <element signature="e#753#835#0" expanded="true" />
+            <element signature="e#79143#82328#1" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/data/sem/semdata_process.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="202">
-          <caret line="681" column="47" selection-start-line="681" selection-start-column="47" selection-end-line="681" selection-end-column="47" />
+        <state relative-caret-position="115">
+          <caret line="717" column="43" selection-start-line="717" selection-start-column="43" selection-end-line="717" selection-end-column="43" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
             <element signature="e#16325#19454#0" />
