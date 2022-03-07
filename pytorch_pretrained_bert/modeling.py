@@ -1506,7 +1506,7 @@ class BertForMultipleChoiceSpanMask(BertPreTrainedModel):
         else:
             return reshaped_logits
 
-#改进
+#改进---论文1
 class BertForSemSpanMask(BertPreTrainedModel):
     """BERT model for multiple choice tasks.
     This module is composed of the BERT model with a linear layer on top of
@@ -1675,3 +1675,78 @@ class BertForSemSpanMask(BertPreTrainedModel):
             return loss
         else:
             return logits
+
+'''
+# 论文3----在论文1的基础上引入外部知识：方面类-情感词的知识图谱、或者互信息。。。
+class BertForSemSpanMaskwithKnowledge(BertPreTrainedModel):
+
+    def __init__(self, config, num_choices):
+        super(BertForSemSpanMaskwithKnowledge, self).__init__(config)
+        self.num_choices = num_choices
+        self.bert = BertModel(config)
+        self.pooler = BertPooler(config)  ###
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+        self.span_layer = BertLayer(config)  ###
+        self.w = nn.Parameter(torch.Tensor([0.5, 0.5]))  ###
+
+        self.gamma = nn.Parameter(torch.ones(1))  ###
+        self.classifier = nn.Linear(config.hidden_size, num_choices)  ##
+        self.apply(self.init_bert_weights)
+        self.ddd = nn.Linear(config.hidden_size * 2, config.hidden_size)  ###2:改成拼接
+        self.multihead_attn = nn.MultiheadAttention(768, 1)
+        self.activation = nn.Tanh()
+
+    # 新增input_span_mask
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, input_span_mask=None):
+        input_span_mask = input_span_mask.cuda()  ###
+        flat_input_ids = input_ids.view(-1, input_ids.size(-1))
+        flat_token_type_ids = token_type_ids.view(-1, token_type_ids.size(-1))
+        flat_attention_mask = attention_mask.view(-1, attention_mask.size(-1))
+        ###开始变化
+        input_span_mask = input_span_mask.view(-1, input_ids.size(-1), input_ids.size(-1))  ###
+
+        # 注意！！！！！！如果删掉上面的flat的话，input_ids, token_type_ids维度不对
+        all_encoder_layers, _ = self.bert(flat_input_ids, flat_token_type_ids, flat_attention_mask,
+                                          output_all_encoded_layers=True)
+
+        sequence_output = all_encoder_layers[-1]  ##取最后一层隐层
+        sequence_output = self.dropout(sequence_output)
+
+        # span_attention_mask
+        extended_span_attention_mask = input_span_mask.unsqueeze(1)  # 在第二维增加一个维度1
+        extended_span_attention_mask = extended_span_attention_mask.to(
+            dtype=next(self.parameters()).dtype)  # fp16 compatibility
+        extended_span_attention_mask = (1.0 - extended_span_attention_mask) * -10000.0
+
+        # span_attention_mask
+        extended_span_attention_mask = input_span_mask.unsqueeze(1)
+        extended_span_attention_mask = extended_span_attention_mask.to(
+            dtype=next(self.parameters()).dtype)  # fp16 compatibility
+        extended_span_attention_mask = (1.0 - extended_span_attention_mask) * -10000.0
+
+        span_sequence_output = self.span_layer(sequence_output, extended_span_attention_mask)
+        w = F.softmax(self.w)
+
+        # 33a_bp -1
+        attn_output1, attn_output_weights1 = self.multihead_attn(span_sequence_output, sequence_output, sequence_output)
+        attn_output2, attn_output_weights2 = self.multihead_attn(sequence_output, span_sequence_output,
+                                                                 span_sequence_output)
+        attn_output = self.gamma * (w[0] * attn_output1 + w[1] * attn_output2)
+
+        #！！再拼接一个基于GCN的向量
+        gcn_output=
+        pooled_output = self.pooler(gcn_output)
+
+
+        ###结束变化
+        logits = self.classifier(pooled_output)
+        # reshaped_logits = logits.view(-1, self.num_choices)
+
+        if labels is not None:
+            loss_fct = CrossEntropyLoss()
+            loss = loss_fct(logits, labels)
+            return loss
+        else:
+            return logits
+'''

@@ -339,9 +339,34 @@ def roc_sem_micro_or_macro(labelfile,logitsfile,classes,micro_or_macro):
         return fpr["macro"], tpr["macro"], roc_auc["macro"]
     else: print('Must choose micro_or_macro!')
 
+def plt_roc_sem_micro_or_macro_only(labelfile1,logitsfile1,micro_or_macro):
+    #  一个实验
+    import matplotlib.pyplot as plt
+    # Plot all ROC curves
+    fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['0','1','2','3','4'],micro_or_macro)
+
+    lw = 1.5
+    plt.figure()
+    plt.plot(fpr1, tpr1,
+             label=' BERTO (area = {0:0.2f})'
+                   ''.format(roc_auc1),
+             color='cornflowerblue', linestyle='-.', linewidth=2.5)#cornflowerblue
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)#反对角线
+
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    if micro_or_macro=='micro':
+        plt.title('micro-average ROC curve')#
+    else:
+        plt.title('macro-average ROC curve')#
+    plt.legend(loc="lower right")
+    plt.show()
 
 def plt_roc_sem_micro_or_macro(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,micro_or_macro):
-    # RoBERTa BERT Syntax-BERT BERT
+    #  BERT RoBERTa Syntax-BERT
     import matplotlib.pyplot as plt
     # Plot all ROC curves
     fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['0','1','2','3','4'],micro_or_macro)
@@ -400,6 +425,98 @@ def plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,la
              label='Syntax-BERT (area = {0:0.2f})'
                    ''.format(roc_auc4),
              color='red', linestyle=':', linewidth=3)
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)#反对角线
+
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    if micro_or_macro=='micro':
+        plt.title('micro-average ROC curve')# TextCNN BiLSTM BiGRU
+    else:
+        plt.title('macro-average ROC curve')# TextCNN BiLSTM BiGRU
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+def plt_roc_sem_micro_or_macro3(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,labelfile5,logitsfile5,micro_or_macro):
+    # TextCNN BiLSTM BiGRU和BERT、BERTCNN
+    import matplotlib.pyplot as plt
+    # Plot all ROC curves
+    fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['1','2','3','4','5'],micro_or_macro)
+    fpr2, tpr2, roc_auc2 = roc_sem_micro_or_macro(labelfile2, logitsfile2,['1','2','3','4','5'],micro_or_macro)
+    fpr3, tpr3, roc_auc3 = roc_sem_micro_or_macro(labelfile3, logitsfile3,['1','2','3','4','5'],micro_or_macro)
+    fpr4, tpr4, roc_auc4 = roc_sem_micro_or_macro(labelfile4, logitsfile4,['0','1','2','3','4'],micro_or_macro)
+    fpr5, tpr5, roc_auc5 = roc_sem_micro_or_macro(labelfile5, logitsfile5, ['0', '1', '2', '3', '4'], micro_or_macro)
+    lw = 1.5
+    plt.figure()
+    plt.plot(fpr1, tpr1,
+             label='CNN (area = {0:0.2f})'
+                   ''.format(roc_auc1),
+             color='forestgreen', linestyle='--', linewidth=3)
+    plt.plot(fpr2, tpr2,
+             label='BiLSTM (area = {0:0.2f})'
+                   ''.format(roc_auc2),
+             color='chocolate', linestyle='-.', linewidth=3)
+    plt.plot(fpr3, tpr3,
+             label='BiGRU (area = {0:0.2f})'
+                   ''.format(roc_auc3),
+             color='plum', linestyle='-', linewidth=3)
+    plt.plot(fpr4, tpr4,
+             label='BERT (area = {0:0.2f})'
+                   ''.format(roc_auc4),
+             color='cornflowerblue', linestyle=':', linewidth=3)
+    plt.plot(fpr5, tpr5,
+             label='BERT-CNN (area = {0:0.2f})'
+                   ''.format(roc_auc5),
+             color='red', linestyle=':', linewidth=3)
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)#反对角线
+
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    if micro_or_macro=='micro':
+        plt.title('micro-average ROC curve')# TextCNN BiLSTM BiGRU和BERT、BERTCNN
+    else:
+        plt.title('macro-average ROC curve')# TextCNN BiLSTM BiGRU和BERT、BERTCNN
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+def plt_roc_sem_micro_or_macro4(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,labelfile5,logitsfile5,micro_or_macro):
+    # BERT、BERT + CNN、BERT + BiLSTM、BERT + ATT、BERT + RCNN
+    import matplotlib.pyplot as plt
+    # Plot all ROC curves
+    fpr1, tpr1,roc_auc1 = roc_sem_micro_or_macro(labelfile1,logitsfile1,['1','2','3','4','5'],micro_or_macro)
+    fpr2, tpr2, roc_auc2 = roc_sem_micro_or_macro(labelfile2, logitsfile2,['1','2','3','4','5'],micro_or_macro)
+    fpr3, tpr3, roc_auc3 = roc_sem_micro_or_macro(labelfile3, logitsfile3,['1','2','3','4','5'],micro_or_macro)
+    fpr4, tpr4, roc_auc4 = roc_sem_micro_or_macro(labelfile4, logitsfile4,['0','1','2','3','4'],micro_or_macro)
+    fpr5, tpr5, roc_auc5 = roc_sem_micro_or_macro(labelfile5, logitsfile5, ['0', '1', '2', '3', '4'], micro_or_macro)
+
+    lw = 1.5
+    plt.figure()
+    plt.plot(fpr1, tpr1,
+             label='BERT (area = {0:0.2f})'
+                   ''.format(roc_auc1),
+             color='cornflowerblue', linestyle=':', linewidth=3)
+    plt.plot(fpr2, tpr2,
+             label='BERT-CNN (area = {0:0.2f})'
+                   ''.format(roc_auc2),
+             color='red', linestyle=':', linewidth=3)
+    plt.plot(fpr3, tpr3,
+             label='BERT-BiLSTM (area = {0:0.2f})'
+                   ''.format(roc_auc3),
+             color='plum', linestyle='--', linewidth=3)
+    plt.plot(fpr4, tpr4,
+             label='BERT-ATT (area = {0:0.2f})'
+                   ''.format(roc_auc4),
+             color='forestgreen', linestyle='-.', linewidth=3)
+    plt.plot(fpr5, tpr5,
+             label='BERT-RCNN (area = {0:0.2f})'
+                   ''.format(roc_auc4),
+             color='chocolate', linestyle='-', linewidth=3)
+
     plt.plot([0, 1], [0, 1], 'k--', lw=lw)#反对角线
 
     plt.xlim([0.0, 1.0])
@@ -564,6 +681,9 @@ if __name__ == "__main__":
     labelfile4='semresult/ntest_sg_label55.tsv'
     logitsfile4='semresult/all_logits_sg55.txt'
     #micro#图片存于semresult/microROC_cnn等4个.png
-    plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,'micro')
+    #plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,'micro')
     #macro#图片存于semresult/macroROC_cnn等4个.png
     plt_roc_sem_micro_or_macro2(labelfile1,logitsfile1,labelfile2,logitsfile2,labelfile3,logitsfile3,labelfile4,logitsfile4,'macro')
+
+    #一个
+    #plt_roc_sem_micro_or_macro_only('ntest_BertOrigin_label.tsv','all_logits_BertOrigin.txt','micro')

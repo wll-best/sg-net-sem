@@ -4,6 +4,13 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="bert-sem-pt" />
+    <orderEntry type="module" module-name="Text-Classification-Models-Pytorch_cnn" />
+    <orderEntry type="module" module-name="101_SCAN" />
+    <orderEntry type="module" module-name="ACSA_HGCN" />
+    <orderEntry type="module" module-name="bert-sem-pt" />
+    <orderEntry type="module" module-name="bert-sem-pt" />
+    <orderEntry type="module" module-name="bert-sem-pt" />
   </component>
   <component name="TestRunnerService">
     <option name="projectConfiguration" value="pytest" />
