@@ -11,6 +11,9 @@
     <orderEntry type="module" module-name="bert-sem-pt" />
     <orderEntry type="module" module-name="bert-sem-pt" />
     <orderEntry type="module" module-name="bert-sem-pt" />
+    <orderEntry type="module" module-name="newp" />
+    <orderEntry type="module" module-name="AAGCN-ACSA" />
+    <orderEntry type="module" module-name="AAGCN" />
   </component>
   <component name="TestRunnerService">
     <option name="projectConfiguration" value="pytest" />

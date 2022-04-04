@@ -3,6 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../../bert-sem-pt" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../../lunwen_study/Aspect-Category-Sentiment-Analysis/AAGCN" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../../../lunwen_study/TextClassification/Text-Classification-Models-Pytorch_cnn" vcs="Git" />
   </component>
 </project>
